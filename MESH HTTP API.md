@@ -52,6 +52,23 @@ property|value
 |403: Authentication Failed
 **Results**|If the authentication is successful then the Connection History on the Mailbox will be updated.
 
+#### Example call
+```
+POST https://10.210.162.216/messageexchange/NONFUNC01
+
+POST data:
+
+Request Headers:
+  Connection: keep-alive
+  Mex-JavaVersion: 1.7.0_60
+  Mex-ClientVersion: Alpha.0.0.1
+  Mex-OSVersion: 6.1
+  Mex-OSArchitecture: Windows 7
+  Mex-OSName: x86
+  Authorization: NONFUNC01:jt81ti68rlvta7379p3ng949rv:1:201511201038:291259e6a73cde3278f99cd5bd3c7ec9b3d1d5479077a8f711bddf58073d5555
+  Content-Type: application/x-www-form-urlencoded
+```
+
 ### Send message
 This command uploads a message to the Message Exchange Server for onward delivery. The message is POST'ed to the Sender's Virtual Outbox on the Spine. Meta-information is supplied in the request headers and the content of the message is supplied in the request body. Messages will be kept for five days before being deleted at which point a ‘message undelivered message’ is sent to the sender for information.
 
@@ -91,6 +108,29 @@ property|value
 |The contents of the message if any is broken into 2Mb chunks and held in the messageExchangeChunk bucket.
 |The Trading Summary Information for the Sending Mailbox is updated on the Spine so that the counts of the number of messages and the total message size transferred are updated. The ID of the newly created message is added to the inbox of the intended recipient mailbox.
 
+#### Example call
+```
+POST https://10.210.162.216/messageexchange/NONFUNC01/outbox
+
+POST data:
+  This is a test file
+  I am typing this so I have a file to send via MESH
+
+Request Headers:
+  Connection: keep-alive
+  Authorization: NONFUNC01:jt81ti68rlvta7379p3ng949rv:8:201511201038:e1672428d9f02e6d14b686bb7953e065eaf7bb146817e9016cf5974612953f5f
+  Content-Type: application/octet-stream
+  Mex-From: NONFUNC01
+  Mex-To: NONFUNC02
+  Mex-WorkflowID: 2015_11_12_1543
+  Mex-Content-Compress: N
+  Mex-Content-Encrypted: N
+  Mex-Content-Compressed: Y
+  Mex-MessageType: Data
+  Mex-LocalID: TESTING01
+  Mex-Subject: TEST TRANSFER 01
+```
+
 ### Upload Chunk
 This command uploads additional chunks for large messages after the first chunk has been uploaded via the Send Message request. No Meta-Data for the message needs to be supplied as it has been supplied when the first chunk was uploaded.
 
@@ -128,6 +168,16 @@ property|value
 **Response Body**|JSON containing the list of Message IDs in the recipient's inbox. (List is limited to the 1st 500 messages)
 **Results**|No changes are made to the database by this action
 
+#### Example call
+```
+GET https://10.210.162.216/messageexchange/NONFUNC01/inbox
+
+Request Headers:
+  Connection: keep-alive
+  Authorization: NONFUNC01:jt81ti68rlvta7379p3ng949rv:2:201511201038:2ba994afb852c7e0d49593f454ad1f8705f5729454958955fe188f191442ea79
+```
+
+
 ### Download message
 Download a message which has been sent to a mailbox.
 
@@ -154,6 +204,15 @@ property|value
 |Mex-Chunk-Range: 1:n - Only returned for a large, multi-chunk message to indicate that this is the 1st chunk of n.
 **Response Body**|The binary contents of the message which is being downloaded. This will be empty if the message is a Report 6 rather than Data.
 **Results**|No changes are made to the database by this action.
+
+#### Example call
+```
+GET https://10.210.162.216/messageexchange/NONFUNC01/inbox/20151120103837238795_386EAF_1429036893
+
+Request Headers:
+  Connection: keep-alive
+  Authorization: NONFUNC01:jt81ti68rlvta7379p3ng949rv:6:201511201038:a764f7b9d0f9aab1ddfb4d9fe258ef63bc547094044408ae4a4dc0f036f06bae
+```
 
 ### Download message chunk
 This message MUST be sent by the recipient to indicate that a message has been downloaded and saved correctly. This changes the status of the message and removes it from the recipient's inbox. Note that this acknowledgement closes the transaction on the Spine but does not result in an associated acknowledgement message to the sending system.
@@ -191,6 +250,17 @@ property|value
 **Results**|Update the details of the downloaded message to set the status and the download time.
 |Remove the Message ID from the Recipient's Inbox
 |Update the Trading Summary Information for the Recipient Mailbox to increment the download counter and the total number of bytes downloaded.
+
+#### Example call
+```
+PUT https://10.210.162.216/messageexchange/NONFUNC01/inbox/20151120103837238795_386EAF_1429036893/status/acknowledged
+
+PUT data:
+
+Request Headers:
+  Connection: keep-alive
+  Authorization: NONFUNC01:jt81ti68rlvta7379p3ng949rv:7:201511201038:e0cc8fb33674c75da29f1cace36294974e3b748eda1b75561c5cd4bd89a37d09
+```
 
 ## Security and MESH authentication headers
 MESH increases the security of DTS exchanges. As with DTS each ‘client’ has a unique User ID & Password that is maintained via the MESH administration application. The User ID will be used as the Sender/ Recipient ID and the password will be encrypted using HMAC-SHA256 and placed in the authentication header.
