@@ -1,6 +1,13 @@
 # MESH HTTP API
 
 ## Introduction
+The Message Exchange HTTP API provides a RESTful interface to MESH to allow messages to be transferred between sender & recipient mailboxes.
+This HTTP API is used by all Mailboxes that send and/or receive messages through Message Exchange.  This includes the following:
+- MESH Client - Sends HTTP Requests directly to the MESH HTTP API
+- DTS Client - Sends messages to the DTS Adapter which then delegates the action via the MESH HTTP API
+- 3rd Party Clients - External suppliers can create their own client implementations which upload & download files via the MESH HTTP API.  (At present this is limited to connections over the N3 network but work is being down to allow this access via the internet)
+- 'Internal' Applications - Messages can be sent from core Spine processes to external mailboxes by uploading messages via the MESH HTTP API
+
 The Message Exchange for Social care and Health (MESH) component of the Spine allows messages and files to be delivered to registered recipients via a java client. Users register for a mailbox and install the client. The MESH client manages the sending of messages which users (typically user systems) have placed in an outbox directory on their machine.
 
 It similarly manages the downloading of messages and files which other users have placed in the user’s virtual inbox on the Spine. The MESH server has been designed with an underlying HTTP based protocol. This protocol is capable of being used directly where user systems wish to bypass the MESH client or where they want to construct their own clients. Thus the MESH service will become a direct ‘store and retrieve’ messaging mechanism between endpoints as a new asynchronous pattern for Spine consumers. MESH uses a RESTful paradigm and thus messages which are send via mesh are POSTed to a MESH virtual outbox and recipients retrieve messages through a GET to their virtual inbox. The following document summarises the MESH HTTP API which may be used by clients directly or over which other SOAP or other APIs may be overlaid.
