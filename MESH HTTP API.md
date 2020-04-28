@@ -128,3 +128,29 @@ property|value
 **Response Body**|JSON containing the list of Message IDs in the recipient's inbox. (List is limited to the 1st 500 messages)
 **Results**|No changes are made to the database by this action
 
+### Download message
+Download a message which has been sent to a mailbox.
+
+property|value
+--- | ---
+**URL**|/messageexchange/{recipient}/inbox/{messageID}
+**HTTP Action**|GET
+**Request Headers**|Authorization: [Authentication Headers (see below)]
+|Accept-Encoding: (optional) 'gzip' if client can accept & decompress messages in GZip format
+**Response Code**|200: Ok
+|206: Partial Download. Indicates that this is the 1 st chunk of a multi-chunk message. The subsequent chunks can be downloaded via calls to the Download Chunk request. (see section 4.6)
+|403: Authentication Failed
+|404: Message does not exist
+|410: Gone, message has already been downloaded
+**Response Headers**|Content-Type: application/octet-stream
+|Content-Encoding: gzip if message was compressed on upload and can be accepted by the recipient.
+|Mex-From: {senders mailbox ID}
+|Mex-To: {recipient identifier}
+|Mex-WorkflowID: {DTS Workflow ID}
+|Mex-MessageID: {DTS Message ID}
+|Mex-FileName: {Original File Name}
+**Optional HTTP Response Headers**|Mex-ProcessID: {DTS Workflow ID}
+|Mex-Content-Compress: {Flag to indicate that contents should be compressed during transport}
+|Mex-Chunk-Range: 1:n - Only returned for a large, multi-chunk message to indicate that this is the 1st chunk of n.
+**Response Body**|The binary contents of the message which is being downloaded. This will be empty if the message is a Report 6 rather than Data.
+**Results**|No changes are made to the database by this action.
