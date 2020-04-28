@@ -279,3 +279,29 @@ The Server will perform the following checks to authenticate the request:
 - Check that we have not already received this combination of User ID, Nonce & Nonce Count on a previous HTTP request.
 - Check that we have not already received this combination of User ID, Nonce & Nonce Count on a previous HTTP request. (Use a method similar to EBXml Dedupe to hold these values in a Redis DB?)
 - Check that the Timestamp is within allowable bounds (e.g. ± 2 hour of current time to allow for BST/GMT & client/server clock differences)
+
+### Summary of MESH attributes
+
+Attribute|Purpose|Mandatory|Legacy
+--- | ---| ---| ---
+Authorization:|To authenticate sender|Yes|
+Mex-ClientVersion:|For audit purposes|No|
+Mex-OSArchitecture:|For audit purposes|No|
+Mex-OSName:|For audit purposes|No|
+Mex-OSVersion:|For audit purposes|No|
+Mex-JavaVersion:|For audit purposes|No|
+Mex-From:|Sender of the message, a DTS address|Yes|
+Mex-To:|Recipient of the message, a DTS address|Yes|
+Mex-WorkflowID:|Identifies the type of message being sent e.g. Pathology, GP Capitation|Yes|
+Mex-FileName:|The name of file|No
+Mex-ProcessID:|For future use. Identifier to specify the type of processing that might be required before forwarding to the recipient.|No|
+Mex-Content-Compress:|Flag to indicate that the contents have been automatically compressed by the client using GZip compression|No|Yes
+Mex-Content-Encrypted:|Flag indicating that the original message is encrypted|No|Yes
+Mex-Content-Compressed:|Flag indicating that the original message is encrypted|No|Yes
+Mex-Checksum:|Checksum of the original message contents|No|Yes
+Mex-MessageType:|'Data' or 'Report'|No|Yes
+Mex-LocalID:|Local unique identifier of the message|Yes|
+Mex-Subject:|Subject line to be used for SMTP messages|No|
+Mex-PartnerID:|Obsolete|No|Yes
+Mex-MessageID:|Identifies a message once it has first been uploaded to the MESH server|Yes|
+Mex-Chunk-Range|Used for Chunked Messages and indicates the Chunk No & the total number of chunks in the document. Formatted as n:m: n - Chunk No, m - Total No of Chunks|No
