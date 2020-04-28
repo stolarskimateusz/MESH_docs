@@ -154,3 +154,58 @@ property|value
 |Mex-Chunk-Range: 1:n - Only returned for a large, multi-chunk message to indicate that this is the 1st chunk of n.
 **Response Body**|The binary contents of the message which is being downloaded. This will be empty if the message is a Report 6 rather than Data.
 **Results**|No changes are made to the database by this action.
+
+### Download message chunk
+This message MUST be sent by the recipient to indicate that a message has been downloaded and saved correctly. This changes the status of the message and removes it from the recipient's inbox. Note that this acknowledgement closes the transaction on the Spine but does not result in an associated acknowledgement message to the sending system.
+
+property|value
+--- | ---
+**URL**|/messageexchange/{recipient}/inbox/{messageID}/{chunkNo}
+**HTTP Action**|GET
+**Request Headers**|Authorization: [Authentication Headers (see below)]
+**Response Code**|200 : Ok – Indicates that the chunk has been downloaded successfully and that this was the final chunk in the message.
+|206: Partial Download – Indicates that chunk has been downloaded successfully and that there are further chunks.
+|403: Authentication Failure
+|404: Not Found – Indicates that the message chunk does not exist
+**Response Headers**|Content-Type: application/octet-stream
+|Content-Encoding: gzip if message was compressed on upload and can be accepted by the recipient.
+|Mex-Chunk-Range: e.g. ‘2:4’ In the format n:m which indicates that this is chunk n of m chunks.
+|Mex-From: {senders mailbox ID}
+Response Body|The contents of the downloaded chunk
+Results|Update the details of the downloaded message to set the status and the download time.
+|Remove the Message ID from the Recipient's Inbox
+|Update the Trading Summary Information for the Recipient Mailbox to increment the download counter and the total number of bytes downloaded.
+
+### Acknowledge message download
+This message MUST be sent by the recipient to indicate that a message has been downloaded and saved correctly. This changes the status of the message and removes it from the recipient's inbox. Note that this acknowledgement closes the transaction on the Spine but does not result in an associated acknowledgement message to the sending system.
+
+Senders will receive notification of undelivered messages after five days. Senders MAY choose to check on the delivery status of a message in the meantime using the tracing API.
+
+property|value
+--- | ---
+**URL**|/messageexchange/{recipient}/inbox/{messageID}/status/acknowledged
+**HTTP Action**|PUT
+**Request Headers**|Authorization: [Authentication Headers (see below)]
+**Response Code**|200 : Ok
+|403: Authentication Failure
+**Results**|Update the details of the downloaded message to set the status and the download time.
+|Remove the Message ID from the Recipient's Inbox
+|Update the Trading Summary Information for the Recipient Mailbox to increment the download counter and the total number of bytes downloaded.
+
+## Security and MESH authentication headers
+MESH increases the security of DTS exchanges. As with DTS each ‘client’ has a unique User ID & Password that is maintained via the MESH administration application. The User ID will be used as the Sender/ Recipient ID and the password will be encrypted using HMAC-SHA256 and placed in the authentication header.
+
+The authentication header also includes a single use nonce (or combination of nonce & nonce count) so that the value of the Authentication Code can be unique on each request to avoid the possibility of man-in-the-middle/replay attacks.
+
+The following Request Header MUST be present in every HTTP Request:
+`Authorization : NHSMESH {UserID}:{Nonce}:{NonceCount}:{Timestamp}:{HMAC-Sha256(UserID:Nonce:NonceCount:Password:Timestamp)}`
+
+NHSMESH is the name of the Custom Authentication Schema. The Authentication Header should prefix the generated authentication token with the name of this schema followed by a space character.
+
+The Server will perform the following checks to authenticate the request:
+- Get the User ID from the Recipient/Sender ID
+- Get the expected password from the MESH database
+- Use HMAC-SHA256 on the User ID, Password and the Nonce & Nonce Count from the Request Header and check that the hashed values match. The Secret Key for the HMAC generation will be supplied by HSCIC on request.
+- Check that we have not already received this combination of User ID, Nonce & Nonce Count on a previous HTTP request.
+- Check that we have not already received this combination of User ID, Nonce & Nonce Count on a previous HTTP request. (Use a method similar to EBXml Dedupe to hold these values in a Redis DB?)
+- Check that the Timestamp is within allowable bounds (e.g. ± 2 hour of current time to allow for BST/GMT & client/server clock differences)
