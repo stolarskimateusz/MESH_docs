@@ -8,17 +8,17 @@
   - [MESH usage requirements](#mesh-usage-requirements)
     - [Summary of MESH header attributes](#summary-of-mesh-header-attributes)
   - [HTTP messages](#http-messages)
-    - [Authenticate Mailbox](#authenticate-mailbox)
+    - [Authenticate Mailbox (handshake)](#authenticate-mailbox-handshake)
       - [Example call](#example-call)
     - [Send a message](#send-a-message)
       - [Example call](#example-call-1)
     - [Upload a Chunk](#upload-a-chunk)
     - [Check inbox](#check-inbox)
       - [Example call](#example-call-2)
+    - [Check inbox count](#check-inbox-count)
     - [Check Message Status](#check-message-status)
     - [Download message](#download-message)
       - [Example call](#example-call-3)
-    - [Check inbox count](#check-inbox-count)
     - [Download message chunk](#download-message-chunk)
     - [Acknowledge message download](#acknowledge-message-download)
       - [Example call](#example-call-4)
@@ -119,6 +119,7 @@ The following sequence diagram shows a typical MESH message exchange.
 Attribute|Purpose|Mandatory|Legacy
 --- | ---| ---| ---
 Authorization:|To authenticate sender|Yes|
+Accept-Encoding:|indicates if content is compressed, in our case the most common use is "gzip"|No|
 Mex-ClientVersion:|For audit purposes|No|
 Mex-OSArchitecture:|For audit purposes|No|
 Mex-OSName:|For audit purposes|No|
@@ -126,22 +127,25 @@ Mex-OSVersion:|For audit purposes|No|
 Mex-JavaVersion:|For audit purposes|No|
 Mex-From:|Sender of the message, a DTS address|Yes|
 Mex-To:|Recipient of the message, a DTS address|Yes|
-Mex-WorkflowID:|Identifies the type of message being sent e.g. Pathology, GP Capitation|Yes|
-Mex-FileName:|The name of file|No
+Mex-Version:||No||
+Mex-ToSMTP:||No|
+Mex-FromSMTP:||No|
+Mex-WorkflowID:|Identifies the type of message being sent e.g. Pathology, GP Capitation|No|
+Mex-FileName:|The name of the attached file|No|
 Mex-ProcessID:|For future use. Identifier to specify the type of processing that might be required before forwarding to the recipient.|No|
 Mex-Content-Compress:|Flag to indicate that the contents have been automatically compressed by the client using GZip compression|No|Yes
 Mex-Content-Encrypted:|Flag indicating that the original message is encrypted|No|Yes
 Mex-Content-Compressed:|Flag indicating that the original message is encrypted|No|Yes
-Mex-Checksum:|Checksum of the original message contents|No|Yes
+Mex-Content-Checksum:|Checksum of the original message contents|No|Yes
 Mex-MessageType:|'Data' or 'Report'|No|Yes
-Mex-LocalID:|Local unique identifier of the message|Yes|
+Mex-LocalID:|Local unique identifier of the message|No|
 Mex-Subject:|Subject line to be used for SMTP messages|No|
 Mex-PartnerID:|Obsolete|No|Yes
 Mex-MessageID:|Identifies a message once it has first been uploaded to the MESH server|Yes|
 Mex-Chunk-Range|Used for Chunked Messages and indicates the Chunk No & the total number of chunks in the document. Formatted as n:m: n - Chunk No, m - Total No of Chunks|No
 
 ## HTTP messages
-### Authenticate Mailbox
+### Authenticate Mailbox (handshake)
 It performs an authentication check on the Mailbox. This should be performed before the mailbox attempts to send or receive files. This action should be the first action in each polling cycle.
 
 The Check User Authentication message attempts to connect to a specific mailbox. This allows the user to ensure that their authentication is correct and will update the details of the connection history held for the mailbox. It can be considered similar to a keep-alive or a ping message in that it allows monitoring on the Spine to be aware of the ongoing utilisation of the inbox despite a lack of traffic.
@@ -235,9 +239,9 @@ property|value
 **Results**|A new record is created in the messageExchangeRecord bucket which contains the meta-information about the message.<br>The contents of the message if any is broken into 2Mb chunks and held in the messageExchangeChunk bucket.<br>The Trading Summary Information for the Sending Mailbox is updated on the Spine so that the counts of the number of messages and the total message size transferred are updated. The ID of the newly created message is added to the inbox of the intended recipient mailbox.
 
 ### Check inbox
-Checks if there are any messages that have been sent to a specific recipient mailbox and are ready to be downloaded. Client systems MUST poll their assigned inbox a minimum or once a day and a maximum of once every five minutes for messages. Any messages that are identified SHOULD be downloaded immediately. However, clients may choose to throttle messages or may be required to distribute processing time across a number of registered MESH mailboxes.
+Checks if there are any messages that have been sent to a specific recipient mailbox and are ready to be downloaded. Client systems **must** poll their assigned inbox minimum once a day and maximum once every five minutes for messages. Any messages that are identified **should** be downloaded immediately. However, clients may choose to throttle messages or may be required to distribute processing time across a number of registered MESH mailboxes.
 
-Only a list of the first 500 messages are returned. Therefore recipients SHOULD process the first 500 messages in their inbox prior to attempting to view the next awaiting messages.
+Only a list of the first 500 messages are returned. Therefore recipients **should** process the first 500 messages in their inbox prior to attempting to view the next awaiting messages.
 
 property|value
 --- | ---
@@ -258,6 +262,18 @@ Request Headers:
   Authorization: NONFUNC01:jt81ti68rlvta7379p3ng949rv:2:201511201038:2ba994afb852c7e0d49593f454ad1f8705f5729454958955fe188f191442ea79
 ```
 
+### Check inbox count
+This command returns the number of messages currently held in the MESH mailbox that are ready to download.
+
+property|value
+--- | ---
+**URL**|/messageexchange/{recipient}/count
+**HTTP Action**|GET
+**Request Headers**|Authorization: [Authentication Headers (see below)]
+**Response Code**|200: Ok<br>403: Authentication Failed
+**Response Body**|JSON containing the list of Message IDs in the recipient's inbox. (List is limited to the 1st 500 messages) {"messageCount": MessageCount}
+**Response Headers**|Content-Type: application/json
+
 ### Check Message Status
 This command checks the status of a message from a specific recipient mailbox. This message replaces the DTS Message Tracking API call. The LocalID value is an optional parameter in MESH message.
 
@@ -269,7 +285,7 @@ property|value
 |Content-Type: application/octet-stream
 
 ### Download message
-Download a message which has been sent to a mailbox.
+Retrieve a message based on its message_id.
 
 property|value
 --- | ---
@@ -291,20 +307,9 @@ Request Headers:
   Authorization: NONFUNC01:jt81ti68rlvta7379p3ng949rv:6:201511201038:a764f7b9d0f9aab1ddfb4d9fe258ef63bc547094044408ae4a4dc0f036f06bae
 ```
 
-### Check inbox count
-This command returns the number of messages currently held in the MESH mailbox that are ready to download.
-
-property|value
---- | ---
-**URL**|/messageexchange/{recipient}/count
-**HTTP Action**|GET
-**Request Headers**|Authorization: [Authentication Headers (see below)]
-**Response Code**|200: Ok<br>403: Authentication Failed
-**Response Body**|JSON containing the list of Message IDs in the recipient's inbox. (List is limited to the 1st 500 messages) {"messageCount": MessageCount}
-**Response Headers**|Content-Type: application/json
-
 ### Download message chunk
-This message MUST be sent by the recipient to indicate that a message has been downloaded and saved correctly. This changes the status of the message and removes it from the recipient's inbox. Note that this acknowledgement closes the transaction on the Spine but does not result in an associated acknowledgement message to the sending system.
+Retrieve a chunck of the message based on its message_id and chunck number.
+The lowest number is 2, as the first part has been retrieved since the download of the message.
 
 property|value
 --- | ---
