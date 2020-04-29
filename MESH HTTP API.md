@@ -6,10 +6,10 @@ The Message Exchange for Social care and Health (MESH) component of the Spine al
 It similarly manages the downloading of messages and files which other users have placed in the user’s virtual inbox on the Spine. The MESH server has been designed with an underlying HTTP based protocol. This protocol is capable of being used directly where user systems wish to bypass the MESH client or where they want to construct their own clients. Thus the MESH service will become a direct ‘store and retrieve’ messaging mechanism between endpoints as a new asynchronous pattern for Spine consumers. MESH uses a RESTful paradigm and thus messages which are send via mesh are POSTed to a MESH virtual outbox and recipients retrieve messages through a GET to their virtual inbox. The following document summarises the MESH HTTP API which may be used by clients directly or over which other SOAP or other APIs may be overlaid.
 
 The Message Exchange HTTP API provides a RESTful interface to MESH to allow messages to be transferred between sender & recipient mailboxes.
-This HTTP API is used by all Mailboxes that send and/or receive messages through Message Exchange.  This includes the following:
+This HTTP API is used by all Mailboxes that send and/or receive messages through Message Exchange. This includes the following:
 - MESH Client - Sends HTTP Requests directly to the MESH HTTP API
 - DTS Client - Sends messages to the DTS Adapter which then delegates the action via the MESH HTTP API
-- 3rd Party Clients - External suppliers can create their own client implementations which upload & download files via the MESH HTTP API.  (At present this is limited to connections over the N3 network but work is being down to allow this access via the internet)
+- 3rd Party Clients - External suppliers can create their own client implementations which upload & download files via the MESH HTTP API. (At present this is limited to connections over the N3 network but work is being down to allow this access via the internet)
 - 'Internal' Applications - Messages can be sent from core Spine processes to external mailboxes by uploading messages via the MESH HTTP API
 
 ## Starting with MESH
@@ -53,11 +53,11 @@ The basic pseudo-code for a mailbox’s polling cycle is as follows:
   - Send file to recipient indicating number of chunks
     - Upload message chunk
 - Fetch the list of messages in the Mailbox’s Inbox
-  - For each available message: 
+  - For each available message:
     - Download the first part of the message
-    - If identified as a chunked message 
+    - If identified as a chunked message
       - Save the first message chunk to the file system
-      - For each of the remaining chunks 
+      - For each of the remaining chunks
         - Download message chunk
         - Save the message chunk to the file system
   - Acknowledge the successful receipt of the message
@@ -70,12 +70,12 @@ MESH usage requirements:
 The basic pseudocode for a mailbox’s polling cycle is as follows:
 - Authenticate Mailbox
 - For each file waiting to be sent:
-    * Send file to recipient
+  * Send file to recipient
 - Fetch the list of messages in the Mailbox’s Inbox
 - For each available message:
-    * Download the message
-    * Save the message to the file system.
-    * Acknowledge the successful receipt of the message
+  * Download the message
+  * Save the message to the file system.
+  * Acknowledge the successful receipt of the message
 
 The following sequence diagram shows a typical MESH message exchange.
 
@@ -89,25 +89,13 @@ The Check User Authentication message attempts to connect to a specific mailbox.
 
 This message should be the first message sent in a ‘polling’ period for a mailbox. This allows the client to check that the MESH Server can be contacted and the mailbox is active before attempting to send/receive messages.
 
-+-------------------+-----------------------------------------------------------------------------------------------+
-|property           |value                                                                                          |
-+-==================+===============================================================================================+
-|**URL**            |/messageexchange/{mailboxId}                                                                   |
-+-------------------+-----------------------------------------------------------------------------------------------+
-|**HTTP Action**    |POST                                                                                           |
-+-------------------+-----------------------------------------------------------------------------------------------+
-|**Request Headers**|Authorization: [Authentication Headers (see below)]\                                           |
-|                   |Mex-ClientVersion: {Client Version Number}\                                                    |
-|                   |Mex-OSArchitecture: {Operating System Architecture}\                                           |
-|                   |Mex-OSName: {Operating System Name}\                                                           |
-|                   |Mex-OSVersion: {Operating System Version}\                                                     |
-|                   |Mex-JavaVersion: {JVM Version Number}\                                                         |
-+-------------------+-----------------------------------------------------------------------------------------------+
-|**Response Code**  |200: Ok\                                                                                       |
-|                   |403: Authentication Failed                                                                     |
-+-------------------+-----------------------------------------------------------------------------------------------+
-|**Results**        |If the authentication is successful then the Connection History on the Mailbox will be updated.|
-+-------------------+-----------------------------------------------------------------------------------------------+
+property|value
+--- | ---
+**URL**|/messageexchange/{mailboxId}
+**HTTP Action**|POST
+**Request Headers**|Authorization: [Authentication Headers (see below)]<br>Mex-ClientVersion: {Client Version Number}<br>Mex-OSArchitecture: {Operating System Architecture}<br>Mex-OSName: {Operating System Name}<br>Mex-OSVersion: {Operating System Version}<br>Mex-JavaVersion: {JVM Version Number}
+**Response Code**|200: Ok<br>403: Authentication Failed
+**Results**|If the authentication is successful then the Connection History on the Mailbox will be updated.
 
 #### Example call
 ```
@@ -144,12 +132,12 @@ property|value
 --- | ---
 **URL**|/messageexchange/{senders mailbox ID}/outbox
 **HTTP Action**|POST
-**Request Headers**|Authorization: [Authentication Headers (see below)] \\ Content-Type: application/octet-stream \\ Mex-From: {senders mailbox ID} \\ Mex-To: {recipient mailbox ID} \\ Mex-WorkflowID: {DTS Workflow ID} \\ Mex-FileName: {Original File Name} \\ Mex-LocalID: {Local unique identifier of the message}
-**Optional HTTP Request Headers**|Mex-ProcessID: {DTS Process ID} \\ Mex-Content-Compress: {Flag to indicate that the contents have been automaticallycompressed by the client using GZip compression} \\ Mex-Subject : {Subject line to be used for SMTP messages} \\ Mex-Chunk-Range: Used if this is the first chunk of a large document. i.e. ‘1:n’ where n is the total number of chunks in the document. \\ Content-Encoding: gzip
+**Request Headers**|Authorization: [Authentication Headers (see below)]<br>Content-Type: application/octet-stream<br>Mex-From: {senders mailbox ID}<br>Mex-To: {recipient mailbox ID}<br>Mex-WorkflowID: {DTS Workflow ID}<br>Mex-FileName: {Original File Name}<br>Mex-LocalID: {Local unique identifier of the message}
+**Optional HTTP Request Headers**|Mex-ProcessID: {DTS Process ID}<br>Mex-Content-Compress: {Flag to indicate that the contents have been automaticallycompressed by the client using GZip compression}<br>Mex-Subject : {Subject line to be used for SMTP messages}<br>Mex-Chunk-Range: Used if this is the first chunk of a large document. i.e. ‘1:n’ where n is the total number of chunks in the document.<br>Content-Encoding: gzip
 **Request Body**|The binary contents of the message which is being uploaded.
-**Response Code**|202: Accepted \\ 403: Authentication Failed \\ 417: Invalid Recipient
-**Response Body**|JSON which includes the Message ID of the newly created message record. {"messageID": allocatedMessageID} \\ In the Case of a Validation Failure the JSON will contain additional elements which will provide information about the cause of the error: \\ {"messageID": allocatedMessageID, \\ "errorEvent": statusEvent, \\ "errorCode" : statusCode, \\ "errorDescription" : statusDescription} \\ The errorEvent, errorCode & errorDescription entries will contain values as per the DTS Status Values in the DTS Client Interface Specification document.
-**Results**|A new record is created in the messageExchangeRecord bucket which contains the meta-information about the message. \\ The contents of the message if any is broken into 2Mb chunks and held in the messageExchangeChunk bucket. \\ The Trading Summary Information for the Sending Mailbox is updated on the Spine so that the counts of the number of messages and the total message size transferred are updated. The ID of the newly created message is added to the inbox of the intended recipient mailbox.
+**Response Code**|202: Accepted<br>403: Authentication Failed<br>417: Invalid Recipient
+**Response Body**|JSON which includes the Message ID of the newly created message record. {"messageID": allocatedMessageID}<br>In the Case of a Validation Failure the JSON will contain additional elements which will provide information about the cause of the error:<br>{"messageID": allocatedMessageID,<br>"errorEvent": statusEvent,<br>"errorCode" : statusCode,<br>"errorDescription" : statusDescription}<br>The errorEvent, errorCode & errorDescription entries will contain values as per the DTS Status Values in the DTS Client Interface Specification document.
+**Results**|A new record is created in the messageExchangeRecord bucket which contains the meta-information about the message.<br>The contents of the message if any is broken into 2Mb chunks and held in the messageExchangeChunk bucket.<br>The Trading Summary Information for the Sending Mailbox is updated on the Spine so that the counts of the number of messages and the total message size transferred are updated. The ID of the newly created message is added to the inbox of the intended recipient mailbox.
 
 #### Example call
 ```
@@ -188,11 +176,11 @@ property|value
 --- | ---
 **URL**|/messageexchange/{senders mailbox ID}/outbox/{messageID}/chunkNo
 **HTTP Action**|POST
-**Request Headers**|Authorization: [Authentication Headers (see below)] \\ Content-Type: application/octet-stream \\ Mex-Chunk-Range: n:m \\ Content-Encoding: gzip
+**Request Headers**|Authorization: [Authentication Headers (see below)]<br>Content-Type: application/octet-stream<br>Mex-Chunk-Range: n:m<br>Content-Encoding: gzip
 **Request Body**|The binary contents of the compressed chunk which is being uploaded.
-**Response Code**|202: Accepted \\ 403: Authentication Failed
+**Response Code**|202: Accepted<br>403: Authentication Failed
 **Response Body**|JSON which includes the Message ID of the newly created message record. {"messageID" : messageId, "blockId" : chunkNo}
-**Results**|A new record is created in the messageExchangeRecord bucket which contains the meta-information about the message. \\ The contents of the message if any is broken into 2Mb chunks and held in the messageExchangeChunk bucket. \\ The Trading Summary Information for the Sending Mailbox is updated on the Spine so that the counts of the number of messages and the total message size transferred are updated. The ID of the newly created message is added to the inbox of the intended recipient mailbox.
+**Results**|A new record is created in the messageExchangeRecord bucket which contains the meta-information about the message.<br>The contents of the message if any is broken into 2Mb chunks and held in the messageExchangeChunk bucket.<br>The Trading Summary Information for the Sending Mailbox is updated on the Spine so that the counts of the number of messages and the total message size transferred are updated. The ID of the newly created message is added to the inbox of the intended recipient mailbox.
 
 ### Check inbox
 Checks if there are any messages that have been sent to a specific recipient mailbox and are ready to be downloaded. Client systems MUST poll their assigned inbox a minimum or once a day and a maximum of once every five minutes for messages. Any messages that are identified SHOULD be downloaded immediately. However, clients may choose to throttle messages or may be required to distribute processing time across a number of registered MESH mailboxes. Only a list of the first 500 messages are returned. Therefore recipients SHOULD process the first 500 messages in their inbox prior to attempting to view the next awaiting messages.
@@ -207,7 +195,7 @@ property|value
 **HTTP Action**|GET
 **Request Headers**|Authorization: [Authentication Headers (see below)]
 **Request Body**|The binary contents of the compressed chunk which is being uploaded.
-**Response Code**|200: Ok \\ 403: Authentication Failed
+**Response Code**|200: Ok<br>403: Authentication Failed
 **Response Body**|JSON containing the list of Message IDs in the recipient's inbox. (List is limited to the 1st 500 messages)
 **Results**|No changes are made to the database by this action
 
@@ -237,11 +225,10 @@ property|value
 --- | ---
 **URL**|/messageexchange/{recipient}/inbox/{messageID}
 **HTTP Action**|GET
-**Request Headers**|Authorization: [Authentication Headers (see below)] \\ Accept-Encoding: (optional) 'gzip' if client can accept & decompress messages in GZip format
-**Response Code**|200: Ok \\ 206: Partial Download. Indicates that this is the 1 st chunk of a multi-chunk message. The subsequent chunks can be downloaded via calls to the Download Chunk request. (see section 4.6) \\ 403: Authentication Failed
-|404: Message does not exist \\ 410: Gone, message has already been downloaded
-**Response Headers**|Content-Type: application/octet-stream \\ Content-Encoding: gzip if message was compressed on upload and can be accepted by the recipient. \\ Mex-From: {senders mailbox ID} \\ Mex-To: {recipient identifier} \\ Mex-WorkflowID: {DTS Workflow ID} \\ Mex-MessageID: {DTS Message ID} \\ Mex-FileName: {Original File Name}
-**Optional HTTP Response Headers**|Mex-ProcessID: {DTS Workflow ID} \\ Mex-Content-Compress: {Flag to indicate that contents should be compressed during transport} \\ Mex-Chunk-Range: 1:n - Only returned for a large, multi-chunk message to indicate that this is the 1st chunk of n.
+**Request Headers**|Authorization: [Authentication Headers (see below)]<br>Accept-Encoding: (optional) 'gzip' if client can accept & decompress messages in GZip format
+**Response Code**|200: Ok<br>206: Partial Download. Indicates that this is the 1 st chunk of a multi-chunk message. The subsequent chunks can be downloaded via calls to the Download Chunk request. (see section 4.6)<br>403: Authentication Failed<br>404: Message does not exist<br>410: Gone, message has already been downloaded
+**Response Headers**|Content-Type: application/octet-stream<br>Content-Encoding: gzip if message was compressed on upload and can be accepted by the recipient.<br>Mex-From: {senders mailbox ID}<br>Mex-To: {recipient identifier}<br>Mex-WorkflowID: {DTS Workflow ID}<br>Mex-MessageID: {DTS Message ID}<br>Mex-FileName: {Original File Name}
+**Optional HTTP Response Headers**|Mex-ProcessID: {DTS Workflow ID}<br>Mex-Content-Compress: {Flag to indicate that contents should be compressed during transport}<br>Mex-Chunk-Range: 1:n - Only returned for a large, multi-chunk message to indicate that this is the 1st chunk of n.
 **Response Body**|The binary contents of the message which is being downloaded. This will be empty if the message is a Report 6 rather than Data.
 **Results**|No changes are made to the database by this action.
 
@@ -262,7 +249,7 @@ property|value
 **URL**|/messageexchange/{recipient}/count
 **HTTP Action**|GET
 **Request Headers**|Authorization: [Authentication Headers (see below)]
-**Response Code**|200: Ok \\ 403: Authentication Failed
+**Response Code**|200: Ok<br>403: Authentication Failed
 **Response Body**|JSON containing the list of Message IDs in the recipient's inbox. (List is limited to the 1st 500 messages) {"messageCount": MessageCount}
 **Response Headers**|Content-Type: application/json
 
@@ -274,15 +261,10 @@ property|value
 **URL**|/messageexchange/{recipient}/inbox/{messageID}/{chunkNo}
 **HTTP Action**|GET
 **Request Headers**|Authorization: [Authentication Headers (see below)]
-**Response Code**|200 : Ok – Indicates that the chunk has been downloaded successfully and that this was the final chunk in the message. \\ 206: Partial Download – Indicates that chunk has been downloaded successfully and that there are further chunks. \\ 403: Authentication Failure \\ 404: Not Found – Indicates that the message chunk does not exist
-**Response Headers**|Content-Type: application/octet-stream
-|Content-Encoding: gzip if message was compressed on upload and can be accepted by the recipient.
-|Mex-Chunk-Range: e.g. ‘2:4’ In the format n:m which indicates that this is chunk n of m chunks.
-|Mex-From: {senders mailbox ID}
-Response Body|The contents of the downloaded chunk
-Results|Update the details of the downloaded message to set the status and the download time.
-|Remove the Message ID from the Recipient's Inbox
-|Update the Trading Summary Information for the Recipient Mailbox to increment the download counter and the total number of bytes downloaded.
+**Response Code**|200 : Ok – Indicates that the chunk has been downloaded successfully and that this was the final chunk in the message.<br>206: Partial Download – Indicates that chunk has been downloaded successfully and that there are further chunks.<br>403: Authentication Failure<br>404: Not Found – Indicates that the message chunk does not exist
+**Response Headers**|Content-Type: application/octet-stream<br>Content-Encoding: gzip if message was compressed on upload and can be accepted by the recipient.<br>Mex-Chunk-Range: e.g. ‘2:4’ In the format n:m which indicates that this is chunk n of m chunks.<br>Mex-From: {senders mailbox ID}
+**Response Body**|The contents of the downloaded chunk
+**Results**|Update the details of the downloaded message to set the status and the download time.<br>Remove the Message ID from the Recipient's Inbox<br>Update the Trading Summary Information for the Recipient Mailbox to increment the download counter and the total number of bytes downloaded.
 
 ### Acknowledge message download
 Acknowledge the successful download of a message. This will remove the message from the Recipient's Inbox.
@@ -296,11 +278,8 @@ property|value
 **URL**|/messageexchange/{recipient}/inbox/{messageID}/status/acknowledged
 **HTTP Action**|PUT
 **Request Headers**|Authorization: [Authentication Headers (see below)]
-**Response Code**|200 : Ok
-|403: Authentication Failure
-**Results**|Update the details of the downloaded message to set the status and the download time.
-|Remove the Message ID from the Recipient's Inbox
-|Update the Trading Summary Information for the Recipient Mailbox to increment the download counter and the total number of bytes downloaded.
+**Response Code**|200 : Ok<br>403: Authentication Failure
+**Results**|Update the details of the downloaded message to set the status and the download time.<br>Remove the Message ID from the Recipient's Inbox<br>Update the Trading Summary Information for the Recipient Mailbox to increment the download counter and the total number of bytes downloaded.
 
 #### Example call
 ```
