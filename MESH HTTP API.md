@@ -1,15 +1,39 @@
 # MESH HTTP API
 
+- [MESH HTTP API](#mesh-http-api)
+  - [Introduction](#introduction)
+  - [Starting with MESH](#starting-with-mesh)
+  - [MESH Authorization Tokens](#mesh-authorization-tokens)
+  - [MESH Polling Cycle](#mesh-polling-cycle)
+  - [MESH usage requirements](#mesh-usage-requirements)
+    - [Summary of MESH header attributes](#summary-of-mesh-header-attributes)
+  - [HTTP messages](#http-messages)
+    - [Authenticate Mailbox](#authenticate-mailbox)
+      - [Example call](#example-call)
+    - [Send a message](#send-a-message)
+      - [Example call](#example-call-1)
+    - [Upload a Chunk](#upload-a-chunk)
+    - [Check inbox](#check-inbox)
+      - [Example call](#example-call-2)
+    - [Check Message Status](#check-message-status)
+    - [Download message](#download-message)
+      - [Example call](#example-call-3)
+    - [Check inbox count](#check-inbox-count)
+    - [Download message chunk](#download-message-chunk)
+    - [Acknowledge message download](#acknowledge-message-download)
+      - [Example call](#example-call-4)
+
+
 ## Introduction
 The Message Exchange for Social care and Health (MESH) component of the Spine allows messages and files to be delivered to registered recipients via a java client. Users register for a mailbox and install the client. The MESH client manages the sending of messages which users (typically user systems) have placed in an outbox directory on their machine.
 
-It similarly manages the downloading of messages and files which other users have placed in the user’s virtual inbox on the Spine. The MESH server has been designed with an underlying HTTP based protocol. This protocol is capable of being used directly where user systems wish to bypass the MESH client or where they want to construct their own clients. Thus the MESH service will become a direct ‘store and retrieve’ messaging mechanism between endpoints as a new asynchronous pattern for Spine consumers. MESH uses a RESTful paradigm and thus messages which are send via mesh are POSTed to a MESH virtual outbox and recipients retrieve messages through a GET to their virtual inbox. The following document summarises the MESH HTTP API which may be used by clients directly or over which other SOAP or other APIs may be overlaid.
+It similarly manages the downloading of messages and files which other users have placed in the user’s virtual inbox on the Spine. The MESH server has been designed with an underlying HTTP based protocol. This protocol is capable of being used directly where user systems wish to bypass the MESH client or where they want to create their own clients. Thus the MESH service will become a direct 'store and retrieve' messaging mechanism between endpoints as a new asynchronous pattern for Spine consumers.
 
 The Message Exchange HTTP API provides a RESTful interface to MESH to allow messages to be transferred between sender & recipient mailboxes.
 This HTTP API is used by all Mailboxes that send and/or receive messages through Message Exchange. This includes the following:
 - MESH Client - Sends HTTP Requests directly to the MESH HTTP API
 - DTS Client - Sends messages to the DTS Adapter which then delegates the action via the MESH HTTP API
-- 3rd Party Clients - External suppliers can create their own client implementations which upload & download files via the MESH HTTP API. (At present this is limited to connections over the N3 network but work is being down to allow this access via the internet)
+- 3rd Party Clients - External suppliers can create their own client implementations which upload & download files via the MESH HTTP API. (Right now this is limited to connections over the N3 network, but the work to allow this access via the internet is in procces.)
 - 'Internal' Applications - Messages can be sent from core Spine processes to external mailboxes by uploading messages via the MESH HTTP API
 
 ## Starting with MESH
@@ -27,7 +51,7 @@ This HTTP API is used by all Mailboxes that send and/or receive messages through
 
 ## MESH Authorization Tokens
 Each message in the MESH REST API requires a custom authentication token to be passed in the Authorization Request Header. A new token must be generated for each HTTP Request, this can be acheived by regenerating it with a new Nonce or incremented NonceCount. The format of the Authorization token is the concatenation of the following elements (with a ':' separator between each element except after the schema name):
-- 'NHSMESH' - The name of the Custom Authentication Schema
+- 'NHSMESH' - The name of the Custom Authentication Schema. The Authentication Header should prefix the generated authentication token with the name of this schema followed by a space character.
 - Mailbox ID - ID of the Mailbox sending the HTTP Request, must be uppercase.
 - Nonce - A GUID used as an encryption 'Nonce'
 - NonceCount - The number of times that the same 'Nonce' has been used.
@@ -39,9 +63,18 @@ Each message in the MESH REST API requires a custom authentication token to be p
   * Mailbox Password - The password for the MESH Mailbox.
   * Timestamp - As above
 
-**Example Token:** "NHSMESH MAILBOX01:73eefd69-811f-44d0-81f8-a54ff352a991:001:201511041205:3097fd5aa85a...f540942614b"
-NB - The Shared Key to generate the HMAC-SHA256 hash will need to be manually requested from HSCIC.
+The following Request Header MUST be present in every HTTP Request:
+`Authorization: NHSMESH MAILBOX01:73eefd69-811f-44d0-81f8-a54ff352a991:001:201511041205:3097fd5aa85a...f540942614b`\
+NB - The Shared Key to generate the HMAC-SHA256 hash will need to be manually requested from HSCIC.\
 Websites are available to generate both GUIDs and HMAC-SHA256 hashes if required.
+
+The Server will perform the following checks to authenticate the request:
+- Get the User ID from the Recipient/Sender ID
+- Get the expected password from the MESH database
+- Use HMAC-SHA256 on the User ID, Password and the Nonce & Nonce Count from the Request Header and check that the hashed values match. The Secret Key for the HMAC generation will be supplied by HSCIC on request.
+- Check that we have not already received this combination of User ID, Nonce & Nonce Count on a previous HTTP request.
+- Check that we have not already received this combination of User ID, Nonce & Nonce Count on a previous HTTP request. (Use a method similar to EBXml Dedupe to hold these values in a Redis DB?)
+- Check that the Timestamp is within allowable bounds (e.g. ± 2 hour of current time to allow for BST/GMT & client/server clock differences)
 
 ## MESH Polling Cycle
 Each Mailbox should periodically check to see if any outbound files need to be sent via MESH and check to see if there are any files which have been sent to the Mailbox to download. If no messages are sent or received for a mailbox during a polling period then the mailbox should pause for a number of minutes (typically 5, 10, 15 minutes) before starting a subsequent polling cycle for the mailbox.
@@ -81,9 +114,35 @@ The following sequence diagram shows a typical MESH message exchange.
 
 **[Diagram here]**
 
+### Summary of MESH header attributes
+
+Attribute|Purpose|Mandatory|Legacy
+--- | ---| ---| ---
+Authorization:|To authenticate sender|Yes|
+Mex-ClientVersion:|For audit purposes|No|
+Mex-OSArchitecture:|For audit purposes|No|
+Mex-OSName:|For audit purposes|No|
+Mex-OSVersion:|For audit purposes|No|
+Mex-JavaVersion:|For audit purposes|No|
+Mex-From:|Sender of the message, a DTS address|Yes|
+Mex-To:|Recipient of the message, a DTS address|Yes|
+Mex-WorkflowID:|Identifies the type of message being sent e.g. Pathology, GP Capitation|Yes|
+Mex-FileName:|The name of file|No
+Mex-ProcessID:|For future use. Identifier to specify the type of processing that might be required before forwarding to the recipient.|No|
+Mex-Content-Compress:|Flag to indicate that the contents have been automatically compressed by the client using GZip compression|No|Yes
+Mex-Content-Encrypted:|Flag indicating that the original message is encrypted|No|Yes
+Mex-Content-Compressed:|Flag indicating that the original message is encrypted|No|Yes
+Mex-Checksum:|Checksum of the original message contents|No|Yes
+Mex-MessageType:|'Data' or 'Report'|No|Yes
+Mex-LocalID:|Local unique identifier of the message|Yes|
+Mex-Subject:|Subject line to be used for SMTP messages|No|
+Mex-PartnerID:|Obsolete|No|Yes
+Mex-MessageID:|Identifies a message once it has first been uploaded to the MESH server|Yes|
+Mex-Chunk-Range|Used for Chunked Messages and indicates the Chunk No & the total number of chunks in the document. Formatted as n:m: n - Chunk No, m - Total No of Chunks|No
+
 ## HTTP messages
 ### Authenticate Mailbox
-Perform an authentication check on the Mailbox. This should be performed before the mailbox attempts to send or receive files. This action should be the first action in each polling cycle.
+It performs an authentication check on the Mailbox. This should be performed before the mailbox attempts to send or receive files. This action should be the first action in each polling cycle.
 
 The Check User Authentication message attempts to connect to a specific mailbox. This allows the user to ensure that their authentication is correct and will update the details of the connection history held for the mailbox. It can be considered similar to a keep-alive or a ping message in that it allows monitoring on the Spine to be aware of the ongoing utilisation of the inbox despite a lack of traffic.
 
@@ -115,18 +174,14 @@ Request Headers:
 ```
 
 ### Send a message
-This command uploads a message to the Message Exchange Server for onward delivery. The message is POST'ed to the Sender's Virtual Outbox on the Spine. Meta-information is supplied in the request headers and the content of the message is supplied in the request body. Messages will be kept for five days before being deleted at which point a ‘message undelivered message’ is sent to the sender for information. If senders have not received an acknowledgement within three days they MAY assume a failed delivery and consider re-sending. However the Spine does not determine fixed contract properties for MESH exchanges and users are free to agree alternative, more stringent, reliable exchange algorithms to suit their scenarios.
+This command uploads a message to the Message Exchange Server for onward delivery. The message is POSTed to the Sender's Virtual Outbox on the Spine. Meta-information is supplied in the request headers and the content of the message is supplied in the request body. Messages will be kept for five days before being deleted at which point a ‘message undelivered message’ is sent to the sender for information.
 
-If the Message contents is greater than 75Mb then the contents will need to be split into multiple chunks. The first chunk in the message is then uploaded using the Send Message request with the addition of the Mex-Chunk-Range header which indicates that it is chunk 1 of n. The subsequent chunks in the message are then uploaded using individual the Upload Chunk requests.
+If senders have not received an acknowledgement within three days they *may* assume a failed delivery and consider re-sending. However the Spine does not determine fixed contract properties for MESH exchanges and users are free to agree alternative, more stringent, reliable exchange algorithms to suit their scenarios.
 
-Important - The support for large chunked messages is optional and so it is important to ensure that intended recipient of the large file can accept chunked files.
+If a message is more than 100Mb in size then it should be split into multiple chunks which are then compressed and uploaded separately. The first chunk in a large message are uploaded via this Send Message request, with the addition of the Mex-Chunk-Range header which indicates that it is chunk 1 of n, which creates the message and returns the Message ID. The subsequent chunks with the obtained Message ID are then uploaded using individual the Upload Chunk requests. The message will only appear in the Recipient’s Inbox when the final chunk has been
+successfully uploaded. 
 
-This command uploads a message to the Message Exchange Server for onward delivery. The message is POST'ed to the Sender's Virtual Outbox on the Spine. Meta-information is supplied in the request headers and the content of the message is supplied in the request body. Messages will be kept for five days before being deleted at which point a ‘message undelivered message’ is sent to the sender for information.
-
-If a message is more than 100Mb in size then it should be split into multiple chunks which are then compressed and uploaded separately. The first chunk in a large message are uploaded via this Send Message request which creates the message and returns the Message ID. This Message ID can then be use to upload the subsequent chunks. The message will only appear in the Recipient’s Inbox when the final chunk has been
-successfully uploaded.
-
-If senders have not received an acknowledgement within three days they MAY assume a failed delivery and consider re-sending. However the Spine does not determine fixed contract properties for MESH exchanges and users are free to agree alternative, more stringent, reliable exchange algorithms to suit their scenarios.
+**Important** The support for large chunked messages is optional and so it is important to ensure that intended recipient of the large file can accept chunked files.
 
 property|value
 --- | ---
@@ -163,14 +218,11 @@ Request Headers:
 ```
 
 ### Upload a Chunk
-This command uploads the second and subsequent chunks of large messages. The contents of the chunk is POST'ed to the Sender's Virtual Outbox on the Spine.
-
-IMPORTANT - The original large file should be broken into chunks and then each chunk will be individually compressed. The each chunk MUST use the same compression alogorithm as the initial chunk uploaded via the Send Message request (e.g. all chunks should use gzip compression).
-
-
 This command uploads additional chunks for large messages after the first chunk has been uploaded via the Send Message request. No Meta-Data for the message needs to be supplied as it has been supplied when the first chunk was uploaded.
 
-The chunks should be uploaded to the Message ID which has been returned in the response for the Send Message. The Chunk No should start with 2 (as the first chunk has been uploaded with the Send Message request) and then incremented until all chunks have been successfully uploaded.
+The chunks should be uploaded to the Message ID, which has been returned in the response for the Send Message. The Chunk No should start with 2 (as the first chunk has been uploaded with the Send Message request) and then incremented until all chunks have been successfully uploaded.
+
+**IMPORTANT** The original large file should be broken into chunks and then each chunk will be individually compressed. The each chunk MUST use the same compression alogorithm as the initial chunk uploaded via the Send Message request (e.g. all chunks should use gzip compression).
 
 property|value
 --- | ---
@@ -183,8 +235,6 @@ property|value
 **Results**|A new record is created in the messageExchangeRecord bucket which contains the meta-information about the message.<br>The contents of the message if any is broken into 2Mb chunks and held in the messageExchangeChunk bucket.<br>The Trading Summary Information for the Sending Mailbox is updated on the Spine so that the counts of the number of messages and the total message size transferred are updated. The ID of the newly created message is added to the inbox of the intended recipient mailbox.
 
 ### Check inbox
-Checks if there are any messages that have been sent to a specific recipient mailbox and are ready to be downloaded. Client systems MUST poll their assigned inbox a minimum or once a day and a maximum of once every five minutes for messages. Any messages that are identified SHOULD be downloaded immediately. However, clients may choose to throttle messages or may be required to distribute processing time across a number of registered MESH mailboxes. Only a list of the first 500 messages are returned. Therefore recipients SHOULD process the first 500 messages in their inbox prior to attempting to view the next awaiting messages.
-
 Checks if there are any messages that have been sent to a specific recipient mailbox and are ready to be downloaded. Client systems MUST poll their assigned inbox a minimum or once a day and a maximum of once every five minutes for messages. Any messages that are identified SHOULD be downloaded immediately. However, clients may choose to throttle messages or may be required to distribute processing time across a number of registered MESH mailboxes.
 
 Only a list of the first 500 messages are returned. Therefore recipients SHOULD process the first 500 messages in their inbox prior to attempting to view the next awaiting messages.
@@ -269,9 +319,9 @@ property|value
 ### Acknowledge message download
 Acknowledge the successful download of a message. This will remove the message from the Recipient's Inbox.
 
-This message MUST be sent by the recipient to indicate that a message has been downloaded and saved correctly. This changes the status of the message and removes it from the recipient's inbox. Note that this acknowledgement closes the transaction on the Spine but does not result in an associated acknowledgement message to the sending system.
+This message **must** be sent by the recipient to indicate that a message has been downloaded and saved correctly. This changes the status of the message and removes it from the recipient's inbox. Note that this acknowledgement closes the transaction on the Spine,acknowledgement but does not result in an associated acknowledgement message to the sending system.
 
-Senders will receive notification of undelivered messages after five days. Senders MAY choose to check on the delivery status of a message in the meantime using the tracing API.
+Senders will receive notification of undelivered messages after five days. Senders *may* choose to check on the delivery status of a message in the meantime using the tracing API.
 
 property|value
 --- | ---
@@ -291,47 +341,3 @@ Request Headers:
   Connection: keep-alive
   Authorization: NONFUNC01:jt81ti68rlvta7379p3ng949rv:7:201511201038:e0cc8fb33674c75da29f1cace36294974e3b748eda1b75561c5cd4bd89a37d09
 ```
-
-## Security and MESH authentication headers
-MESH increases the security of DTS exchanges. As with DTS each ‘client’ has a unique User ID & Password that is maintained via the MESH administration application. The User ID will be used as the Sender/ Recipient ID and the password will be encrypted using HMAC-SHA256 and placed in the authentication header.
-
-The authentication header also includes a single use nonce (or combination of nonce & nonce count) so that the value of the Authentication Code can be unique on each request to avoid the possibility of man-in-the-middle/replay attacks.
-
-The following Request Header MUST be present in every HTTP Request:
-`Authorization : NHSMESH {UserID}:{Nonce}:{NonceCount}:{Timestamp}:{HMAC-Sha256(UserID:Nonce:NonceCount:Password:Timestamp)}`
-
-NHSMESH is the name of the Custom Authentication Schema. The Authentication Header should prefix the generated authentication token with the name of this schema followed by a space character.
-
-The Server will perform the following checks to authenticate the request:
-- Get the User ID from the Recipient/Sender ID
-- Get the expected password from the MESH database
-- Use HMAC-SHA256 on the User ID, Password and the Nonce & Nonce Count from the Request Header and check that the hashed values match. The Secret Key for the HMAC generation will be supplied by HSCIC on request.
-- Check that we have not already received this combination of User ID, Nonce & Nonce Count on a previous HTTP request.
-- Check that we have not already received this combination of User ID, Nonce & Nonce Count on a previous HTTP request. (Use a method similar to EBXml Dedupe to hold these values in a Redis DB?)
-- Check that the Timestamp is within allowable bounds (e.g. ± 2 hour of current time to allow for BST/GMT & client/server clock differences)
-
-### Summary of MESH attributes
-
-Attribute|Purpose|Mandatory|Legacy
---- | ---| ---| ---
-Authorization:|To authenticate sender|Yes|
-Mex-ClientVersion:|For audit purposes|No|
-Mex-OSArchitecture:|For audit purposes|No|
-Mex-OSName:|For audit purposes|No|
-Mex-OSVersion:|For audit purposes|No|
-Mex-JavaVersion:|For audit purposes|No|
-Mex-From:|Sender of the message, a DTS address|Yes|
-Mex-To:|Recipient of the message, a DTS address|Yes|
-Mex-WorkflowID:|Identifies the type of message being sent e.g. Pathology, GP Capitation|Yes|
-Mex-FileName:|The name of file|No
-Mex-ProcessID:|For future use. Identifier to specify the type of processing that might be required before forwarding to the recipient.|No|
-Mex-Content-Compress:|Flag to indicate that the contents have been automatically compressed by the client using GZip compression|No|Yes
-Mex-Content-Encrypted:|Flag indicating that the original message is encrypted|No|Yes
-Mex-Content-Compressed:|Flag indicating that the original message is encrypted|No|Yes
-Mex-Checksum:|Checksum of the original message contents|No|Yes
-Mex-MessageType:|'Data' or 'Report'|No|Yes
-Mex-LocalID:|Local unique identifier of the message|Yes|
-Mex-Subject:|Subject line to be used for SMTP messages|No|
-Mex-PartnerID:|Obsolete|No|Yes
-Mex-MessageID:|Identifies a message once it has first been uploaded to the MESH server|Yes|
-Mex-Chunk-Range|Used for Chunked Messages and indicates the Chunk No & the total number of chunks in the document. Formatted as n:m: n - Chunk No, m - Total No of Chunks|No
