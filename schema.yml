@@ -77,8 +77,16 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
         '403':
           description: Authentication Failed
+          content:
+            application/json:
+              schema:
+                type: object
 
   /messageexchange/{mailboxId}/outbox:
     post:
@@ -588,6 +596,46 @@ paths:
                 type: object
         '404':
           description: Not Found – Indicates that the message chunk does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /messageexchange/{recipientsMailboxID}/inbox/{messageID}/status/:
+    put:
+      summary: Acknowledge message download
+      description: |
+        Acknowledge the successful download of a message. This will remove the message from the Recipient's Inbox.
+      parameters:
+        - in: path
+          name: recipientsMailboxID
+          required: true
+          description: The id of the recipient's mailbox
+          example: "MAILBOX01"
+          schema:
+            type: string
+        - in: path
+          name: messageID
+          required: true
+          description: The id of the message
+          schema:
+            type: string
+        - in: header
+          name: Authorization
+          required: true
+          description: Authentication Headers
+          example: "Authorization: NHSMESH NONFUNC01:jt81ti68rlvta7379p3ng949rv:1:201511201038:291259e6a73cde3278f99cd5bd3c7ec9b3d1d5479077a8f711bddf58073d5555"
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        '403':
+          description: Authentication Failed
           content:
             application/json:
               schema:
