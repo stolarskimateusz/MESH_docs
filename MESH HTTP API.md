@@ -306,14 +306,14 @@ Request Headers:
 ```
 
 ### Download message chunk
-Retrieve a chunck of the message based on its message_id and chunck number.
+Retrieve a chunk of the message based on its message_id and chunk number.
 The lowest number is 2, as the first part has been retrieved since the download of the message.
 
 property|value
 --- | ---
 **URL**|/messageexchange/{recipient}/inbox/{messageID}/{chunkNo}
 **HTTP Action**|GET
-**Request Headers**|Authorization: [Authentication Headers (see below)]
+**Request Headers**|Authorization: [Authentication Headers (see below)]<br>Accept-Encoding: (optional) 'gzip' if client can accept & decompress messages in GZip format
 **Response Code**|200 : Ok – Indicates that the chunk has been downloaded successfully and that this was the final chunk in the message.<br>206: Partial Download – Indicates that chunk has been downloaded successfully and that there are further chunks.<br>403: Authentication Failure<br>404: Not Found – Indicates that the message chunk does not exist
 **Response Headers**|Content-Type: application/octet-stream<br>Content-Encoding: gzip if message was compressed on upload and can be accepted by the recipient.<br>Mex-Chunk-Range: e.g. ‘2:4’ In the format n:m which indicates that this is chunk n of m chunks.<br>Mex-From: {senders mailbox ID}
 **Response Body**|The contents of the downloaded chunk

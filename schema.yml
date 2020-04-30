@@ -526,3 +526,69 @@ paths:
             application/json:
               schema:
                 type: object
+
+  /messageexchange/{recipientsMailboxID}/inbox/{messageID}/{chunkNo}:
+    get:
+      summary: Download message chunk
+      description: |
+        Retrieve a chunk of the message based on its message_id and chunk number.
+        The lowest number is 2, as the first part has been retrieved since the download of the message.
+      parameters:
+        - in: path
+          name: recipientsMailboxID
+          required: true
+          description: The id of the recipient's mailbox
+          example: "MAILBOX01"
+          schema:
+            type: string
+        - in: path
+          name: messageID
+          required: true
+          description: The id of the message
+          schema:
+            type: string
+        - in: path
+          name: chunkNo
+          required: true
+          description: The index of the chunk
+          schema:
+            type: string
+        - in: header
+          name: Authorization
+          required: true
+          description: Authentication Headers
+          example: "Authorization: NHSMESH NONFUNC01:jt81ti68rlvta7379p3ng949rv:1:201511201038:291259e6a73cde3278f99cd5bd3c7ec9b3d1d5479077a8f711bddf58073d5555"
+          schema:
+            type: string
+        - in: header
+          name: Accept-Encoding
+          required: false
+          description: client can accept & decompress messages in GZip format
+          example: gzip
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            binary:
+              schema:
+                type: object
+        '206':
+          description: Partial Download – Indicates that chunk has been downloaded successfully and that there are further chunks.
+          content:
+            binary:
+              schema:
+                type: object    
+        '403':
+          description: Authentication Failed
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: Not Found – Indicates that the message chunk does not exist
+          content:
+            application/json:
+              schema:
+                type: object
