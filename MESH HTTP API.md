@@ -248,7 +248,6 @@ property|value
 **URL**|/messageexchange/{recipient}/inbox
 **HTTP Action**|GET
 **Request Headers**|Authorization: [Authentication Headers (see below)]
-**Request Body**|The binary contents of the compressed chunk which is being uploaded.
 **Response Code**|200: Ok<br>403: Authentication Failed
 **Response Body**|JSON containing the list of Message IDs in the recipient's inbox. (List is limited to the 1st 500 messages)
 **Results**|No changes are made to the database by this action
