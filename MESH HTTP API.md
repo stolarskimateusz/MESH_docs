@@ -230,7 +230,7 @@ The chunks should be uploaded to the Message ID, which has been returned in the 
 
 property|value
 --- | ---
-**URL**|/messageexchange/{senders mailbox ID}/outbox/{messageID}/chunkNo
+**URL**|/messageexchange/{senders mailbox ID}/outbox/{messageID}/{chunkNo}
 **HTTP Action**|POST
 **Request Headers**|Authorization: [Authentication Headers (see below)]<br>Content-Type: application/octet-stream<br>Mex-Chunk-Range: n:m<br>Content-Encoding: gzip
 **Request Body**|The binary contents of the compressed chunk which is being uploaded.
