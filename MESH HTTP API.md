@@ -156,7 +156,7 @@ property|value
 --- | ---
 **URL**|/messageexchange/{mailboxId}
 **HTTP Action**|POST
-**Request Headers**|Authorization: [Authentication Headers (see below)]<br>Mex-ClientVersion: {Client Version Number}<br>Mex-OSArchitecture: {Operating System Architecture}<br>Mex-OSName: {Operating System Name}<br>Mex-OSVersion: {Operating System Version}<br>Mex-JavaVersion: {JVM Version Number}
+**Request Headers**|Authorization: [MESH Authorization Tokens](#mesh-authorization-tokens)<br>Mex-ClientVersion: {Client Version Number}<br>Mex-OSArchitecture: {Operating System Architecture}<br>Mex-OSName: {Operating System Name}<br>Mex-OSVersion: {Operating System Version}<br>Mex-JavaVersion: {JVM Version Number}
 **Response Code**|200: Ok<br>403: Authentication Failed
 **Results**|If the authentication is successful then the Connection History on the Mailbox will be updated.
 
@@ -191,7 +191,7 @@ property|value
 --- | ---
 **URL**|/messageexchange/{senders mailbox ID}/outbox
 **HTTP Action**|POST
-**Request Headers**|Authorization: [Authentication Headers (see below)]<br>Content-Type: application/octet-stream<br>Mex-From: {senders mailbox ID}<br>Mex-To: {recipient mailbox ID}<br>Mex-WorkflowID: {Workflow ID}<br>Mex-FileName: {Original File Name}<br>Mex-LocalID: {Local unique identifier of the message}
+**Request Headers**|Authorization: [MESH Authorization Tokens](#mesh-authorization-tokens)<br>Content-Type: application/octet-stream<br>Mex-From: {senders mailbox ID}<br>Mex-To: {recipient mailbox ID}<br>Mex-WorkflowID: {Workflow ID}<br>Mex-FileName: {Original File Name}<br>Mex-LocalID: {Local unique identifier of the message}
 **Optional HTTP Request Headers**|Mex-ProcessID: {Process ID}<br>Mex-Content-Compress: {Flag to indicate that the contents have been automaticallycompressed by the client using GZip compression}<br>Mex-Subject : {Subject line to be used for SMTP messages}<br>Mex-Chunk-Range: Used if this is the first chunk of a large document. i.e. ‘1:n’ where n is the total number of chunks in the document.<br>Content-Encoding: gzip
 **Request Body**|The binary contents of the message which is being uploaded.
 **Response Code**|202: Accepted<br>403: Authentication Failed<br>417: Invalid Recipient
@@ -232,7 +232,7 @@ property|value
 --- | ---
 **URL**|/messageexchange/{senders mailbox ID}/outbox/{messageID}/{chunkNo}
 **HTTP Action**|POST
-**Request Headers**|Authorization: [Authentication Headers (see below)]<br>Content-Type: application/octet-stream<br>Mex-Chunk-Range: n:m<br>Content-Encoding: gzip
+**Request Headers**|Authorization: [MESH Authorization Tokens](#mesh-authorization-tokens)<br>Content-Type: application/octet-stream<br>Mex-Chunk-Range: n:m<br>Content-Encoding: gzip
 **Request Body**|The binary contents of the compressed chunk which is being uploaded.
 **Response Code**|202: Accepted<br>403: Authentication Failed
 **Response Body**|JSON which includes the Message ID of the newly created message record. {"messageID" : messageId, "blockId" : chunkNo}
@@ -247,7 +247,7 @@ property|value
 --- | ---
 **URL**|/messageexchange/{mailboxId}/inbox
 **HTTP Action**|GET
-**Request Headers**|Authorization: [Authentication Headers (see below)]
+**Request Headers**|Authorization: [MESH Authorization Tokens](#mesh-authorization-tokens)
 **Response Code**|200: Ok<br>403: Authentication Failed
 **Response Body**|JSON containing the list of Message IDs in the recipient's inbox. (List is limited to the 1st 500 messages)
 **Results**|No changes are made to the database by this action
@@ -268,7 +268,7 @@ property|value
 --- | ---
 **URL**|/messageexchange/{mailboxId}/count
 **HTTP Action**|GET
-**Request Headers**|Authorization: [Authentication Headers (see below)]
+**Request Headers**|Authorization: [MESH Authorization Tokens](#mesh-authorization-tokens)
 **Response Code**|200: Ok<br>403: Authentication Failed
 **Response Body**|JSON containing the list of Message IDs in the recipient's inbox. (List is limited to the 1st 500 messages) {"messageCount": MessageCount}
 **Response Headers**|Content-Type: application/json
@@ -280,7 +280,7 @@ property|value
 --- | ---
 **URL**|/messageexchange/{senders_mailbox_ID}/outbox/tracking/{localId}
 **HTTP Action**|GET
-**Request Headers**|Authorization: [Authentication Headers (see below)]
+**Request Headers**|Authorization: [MESH Authorization Tokens](#mesh-authorization-tokens)
 
 ### Download message
 Retrieve a message based on its message_id.
@@ -289,7 +289,7 @@ property|value
 --- | ---
 **URL**|/messageexchange/{recipient}/inbox/{messageID}
 **HTTP Action**|GET
-**Request Headers**|Authorization: [Authentication Headers (see below)]<br>Accept-Encoding: (optional) 'gzip' if client can accept & decompress messages in GZip format
+**Request Headers**|Authorization: [MESH Authorization Tokens](#mesh-authorization-tokens)<br>Accept-Encoding: (optional) 'gzip' if client can accept & decompress messages in GZip format
 **Response Code**|200: Ok<br>206: Partial Download. Indicates that this is the 1 st chunk of a multi-chunk message. The subsequent chunks can be downloaded via calls to the Download Chunk request.<br>403: Authentication Failed<br>404: Message does not exist<br>410: Gone, message has already been downloaded
 **Response Headers**|Content-Type: application/octet-stream<br>Content-Encoding: gzip if message was compressed on upload and can be accepted by the recipient.<br>Mex-From: {senders mailbox ID}<br>Mex-To: {recipient identifier}<br>Mex-WorkflowID: {DTS Workflow ID}<br>Mex-MessageID: {DTS Message ID}<br>Mex-FileName: {Original File Name}
 **Optional HTTP Response Headers**|Mex-ProcessID: {DTS Workflow ID}<br>Mex-Content-Compress: {Flag to indicate that contents should be compressed during transport}<br>Mex-Chunk-Range: 1:n - Only returned for a large, multi-chunk message to indicate that this is the 1st chunk of n.
@@ -313,7 +313,7 @@ property|value
 --- | ---
 **URL**|/messageexchange/{recipient}/inbox/{messageID}/{chunkNo}
 **HTTP Action**|GET
-**Request Headers**|Authorization: [Authentication Headers (see below)]<br>Accept-Encoding: (optional) 'gzip' if client can accept & decompress messages in GZip format
+**Request Headers**|Authorization: [MESH Authorization Tokens](#mesh-authorization-tokens)<br>Accept-Encoding: (optional) 'gzip' if client can accept & decompress messages in GZip format
 **Response Code**|200 : Ok – Indicates that the chunk has been downloaded successfully and that this was the final chunk in the message.<br>206: Partial Download – Indicates that chunk has been downloaded successfully and that there are further chunks.<br>403: Authentication Failure<br>404: Not Found – Indicates that the message chunk does not exist
 **Response Headers**|Content-Type: application/octet-stream<br>Content-Encoding: gzip if message was compressed on upload and can be accepted by the recipient.<br>Mex-Chunk-Range: e.g. ‘2:4’ In the format n:m which indicates that this is chunk n of m chunks.<br>Mex-From: {senders mailbox ID}
 **Response Body**|The contents of the downloaded chunk
@@ -330,7 +330,7 @@ property|value
 --- | ---
 **URL**|/messageexchange/{recipient}/inbox/{messageID}/status/acknowledged
 **HTTP Action**|PUT
-**Request Headers**|Authorization: [Authentication Headers (see below)]
+**Request Headers**|Authorization: [MESH Authorization Tokens](#mesh-authorization-tokens)
 **Response Code**|200 : Ok<br>403: Authentication Failure
 **Results**|Update the details of the downloaded message to set the status and the download time.<br>Remove the Message ID from the Recipient's Inbox<br>Update the Trading Summary Information for the Recipient Mailbox to increment the download counter and the total number of bytes downloaded.
 

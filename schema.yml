@@ -15,9 +15,9 @@ servers:
   - url: https://api.server.test/v1
 
 paths:
-  /messageexchange/{mailboxId}:
+  /messageexchange/{mailboxID}:
     post:
-      summary: Authenticate Mailbox (handshake)
+      summary: Authenticate a mailbox (handshake)
       description: |
         It performs an authentication check on the Mailbox. This should be performed before the mailbox attempts to send or receive files. This action should be the first action in each polling cycle.
 
@@ -26,7 +26,7 @@ paths:
         This message should be the first message sent in a ‘polling’ period for a mailbox. This allows the client to check that the MESH Server can be contacted and the mailbox is active before attempting to send/receive messages.
       parameters:
         - in: path
-          name: mailboxId
+          name: mailboxID
           required: true
           description: The id of the mailbox
           example: "MAILBOX01"
@@ -88,14 +88,14 @@ paths:
               schema:
                 type: object
 
-  /messageexchange/{mailboxId}/outbox:
+  /messageexchange/{mailboxID}/outbox:
     post:
       summary: Send a message
       description: |
         This command uploads a message to the Message Exchange Server for onward delivery. The message is POSTed to the Sender's Virtual Outbox on the Spine. Meta-information is supplied in the request headers and the content of the message is supplied in the request body. Messages will be kept for five days before being deleted at which point a ‘message undelivered message’ is sent to the sender for information.
       parameters:
         - in: path
-          name: mailboxId
+          name: mailboxID
           required: true
           description: The id of the mailbox
           example: "MAILBOX01"
@@ -244,14 +244,14 @@ paths:
                     type: string
                     description: "Description of the status"
 
-  /messageexchange/{mailboxId}/outbox/{messageID}/{chunkNo}:
+  /messageexchange/{mailboxID}/outbox/{messageID}/{chunkNo}:
     post:
-      summary: Upload a Chunk
+      summary: Upload a chunk of the message
       description: |
         This command uploads additional chunks for large messages after the first chunk has been uploaded via the Send Message request. No Meta-Data for the message needs to be supplied as it has been supplied when the first chunk was uploaded.
       parameters:
         - in: path
-          name: mailboxId
+          name: mailboxID
           required: true
           description: The id of the mailbox
           example: "MAILBOX01"
@@ -363,14 +363,14 @@ paths:
                     type: string
                     description: "Description of the status"
 
-  /messageexchange/{mailboxId}/inbox:
+  /messageexchange/{mailboxID}/inbox:
     get:
-      summary: Check inbox
+      summary: Check an inbox
       description: |
         Checks if there are any messages that have been sent to a specific recipient mailbox and are ready to be downloaded. Client systems **must** poll their assigned inbox minimum once a day and maximum once every five minutes for messages. Any messages that are identified **should** be downloaded immediately. However, clients may choose to throttle messages or may be required to distribute processing time across a number of registered MESH mailboxes.
       parameters:
         - in: path
-          name: mailboxId
+          name: mailboxID
           required: true
           description: The id of the recipient's mailbox ID
           example: "MAILBOX01"
@@ -397,14 +397,14 @@ paths:
               schema:
                 type: object
 
-  /messageexchange/{mailboxId}/count:
+  /messageexchange/{mailboxID}/count:
     get:
-      summary: Check inbox count
+      summary: Check an inbox's count
       description: |
         This command returns the number of messages currently held in the MESH mailbox that are ready to download.
       parameters:
         - in: path
-          name: mailboxId
+          name: mailboxID
           required: true
           description: The id of the recipient's mailbox ID
           example: "MAILBOX01"
@@ -436,17 +436,23 @@ paths:
               schema:
                 type: object
 
-  /messageexchange/{sendersMailboxID}/outbox/tracking/{localId}:
+  /messageexchange/{mailboxID}/outbox/tracking/{localId}:
     get:
-      summary: Check inbox count
+      summary: Check message's status
       description: |
-        This command returns the number of messages currently held in the MESH mailbox that are ready to download.
+        This command checks the status of a message from a specific recipient mailbox. This message replaces the DTS Message Tracking API call. The LocalID value is an optional parameter in MESH message.
       parameters:
         - in: path
-          name: mailboxId
+          name: mailboxID
           required: true
           description: The id of the recipient's mailbox ID
           example: "MAILBOX01"
+          schema:
+            type: string
+        - in: path
+          name: localId
+          required: true
+          description: Local unique identifier of the message
           schema:
             type: string
         - in: header
@@ -470,14 +476,14 @@ paths:
               schema:
                 type: object
 
-  /messageexchange/{recipientsMailboxID}/inbox/{messageID}:
+  /messageexchange/{mailboxID}/inbox/{messageID}:
     get:
-      summary: Download message
+      summary: Download a message
       description: |
         This command returns the number of messages currently held in the MESH mailbox that are ready to download.
       parameters:
         - in: path
-          name: recipientsMailboxID
+          name: mailboxID
           required: true
           description: The id of the recipient's mailbox
           example: "MAILBOX01"
@@ -535,15 +541,15 @@ paths:
               schema:
                 type: object
 
-  /messageexchange/{recipientsMailboxID}/inbox/{messageID}/{chunkNo}:
+  /messageexchange/{mailboxID}/inbox/{messageID}/{chunkNo}:
     get:
-      summary: Download message chunk
+      summary: Download a chunk of the message
       description: |
         Retrieve a chunk of the message based on its message_id and chunk number.
         The lowest number is 2, as the first part has been retrieved since the download of the message.
       parameters:
         - in: path
-          name: recipientsMailboxID
+          name: mailboxID
           required: true
           description: The id of the recipient's mailbox
           example: "MAILBOX01"
@@ -601,14 +607,14 @@ paths:
               schema:
                 type: object
 
-  /messageexchange/{recipientsMailboxID}/inbox/{messageID}/status/:
+  /messageexchange/{mailboxID}/inbox/{messageID}/status/:
     put:
-      summary: Acknowledge message download
+      summary: Acknowledge a message's download
       description: |
         Acknowledge the successful download of a message. This will remove the message from the Recipient's Inbox.
       parameters:
         - in: path
-          name: recipientsMailboxID
+          name: mailboxID
           required: true
           description: The id of the recipient's mailbox
           example: "MAILBOX01"
