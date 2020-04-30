@@ -355,17 +355,17 @@ paths:
                     type: string
                     description: "Description of the status"
 
-  /messageexchange/{recipientsMailboxId}/inbox:
+  /messageexchange/{mailboxId}/inbox:
     get:
       summary: Check inbox
       description: |
         Checks if there are any messages that have been sent to a specific recipient mailbox and are ready to be downloaded. Client systems **must** poll their assigned inbox minimum once a day and maximum once every five minutes for messages. Any messages that are identified **should** be downloaded immediately. However, clients may choose to throttle messages or may be required to distribute processing time across a number of registered MESH mailboxes.
       parameters:
         - in: path
-          name: recipientsMailboxId
+          name: mailboxId
           required: true
-          description: The id of the recipient's mailbox
-          example: "MAILBOX02"
+          description: The id of the recipient's mailbox ID
+          example: "MAILBOX01"
           schema:
             type: string
         - in: header
@@ -382,6 +382,45 @@ paths:
             application/json:
               schema:
                 type: object
+        '403':
+          description: Authentication Failed
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /messageexchange/{mailboxId}/count:
+    get:
+      summary: Check inbox count
+      description: |
+        This command returns the number of messages currently held in the MESH mailbox that are ready to download.
+      parameters:
+        - in: path
+          name: mailboxId
+          required: true
+          description: The id of the recipient's mailbox ID
+          example: "MAILBOX01"
+          schema:
+            type: string
+        - in: header
+          name: Authorization
+          required: true
+          description: Authentication Headers
+          example: "Authorization: NHSMESH NONFUNC01:jt81ti68rlvta7379p3ng949rv:1:201511201038:291259e6a73cde3278f99cd5bd3c7ec9b3d1d5479077a8f711bddf58073d5555"
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messageCount:
+                    type: integer
+                    description: "Amount of messages in the inbox"
+                    example: 2
         '403':
           description: Authentication Failed
           content:

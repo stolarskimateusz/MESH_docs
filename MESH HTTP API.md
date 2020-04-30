@@ -245,7 +245,7 @@ Only a list of the first 500 messages are returned. Therefore recipients **shoul
 
 property|value
 --- | ---
-**URL**|/messageexchange/{recipient}/inbox
+**URL**|/messageexchange/{mailboxId}/inbox
 **HTTP Action**|GET
 **Request Headers**|Authorization: [Authentication Headers (see below)]
 **Response Code**|200: Ok<br>403: Authentication Failed
@@ -266,7 +266,7 @@ This command returns the number of messages currently held in the MESH mailbox t
 
 property|value
 --- | ---
-**URL**|/messageexchange/{recipient}/count
+**URL**|/messageexchange/{mailboxId}/count
 **HTTP Action**|GET
 **Request Headers**|Authorization: [Authentication Headers (see below)]
 **Response Code**|200: Ok<br>403: Authentication Failed
