@@ -171,8 +171,8 @@ Request Headers:
   Mex-JavaVersion: 1.7.0_60
   Mex-ClientVersion: Alpha.0.0.1
   Mex-OSVersion: 6.1
-  Mex-OSArchitecture: Windows 7
-  Mex-OSName: x86
+  Mex-OSArchitecture: Windows 10
+  Mex-OSName: x86_64
   Authorization: NONFUNC01:jt81ti68rlvta7379p3ng949rv:1:201511201038:291259e6a73cde3278f99cd5bd3c7ec9b3d1d5479077a8f711bddf58073d5555
   Content-Type: application/x-www-form-urlencoded
 ```
@@ -191,11 +191,11 @@ property|value
 --- | ---
 **URL**|/messageexchange/{senders mailbox ID}/outbox
 **HTTP Action**|POST
-**Request Headers**|Authorization: [Authentication Headers (see below)]<br>Content-Type: application/octet-stream<br>Mex-From: {senders mailbox ID}<br>Mex-To: {recipient mailbox ID}<br>Mex-WorkflowID: {DTS Workflow ID}<br>Mex-FileName: {Original File Name}<br>Mex-LocalID: {Local unique identifier of the message}
-**Optional HTTP Request Headers**|Mex-ProcessID: {DTS Process ID}<br>Mex-Content-Compress: {Flag to indicate that the contents have been automaticallycompressed by the client using GZip compression}<br>Mex-Subject : {Subject line to be used for SMTP messages}<br>Mex-Chunk-Range: Used if this is the first chunk of a large document. i.e. ‘1:n’ where n is the total number of chunks in the document.<br>Content-Encoding: gzip
+**Request Headers**|Authorization: [Authentication Headers (see below)]<br>Content-Type: application/octet-stream<br>Mex-From: {senders mailbox ID}<br>Mex-To: {recipient mailbox ID}<br>Mex-WorkflowID: {Workflow ID}<br>Mex-FileName: {Original File Name}<br>Mex-LocalID: {Local unique identifier of the message}
+**Optional HTTP Request Headers**|Mex-ProcessID: {Process ID}<br>Mex-Content-Compress: {Flag to indicate that the contents have been automaticallycompressed by the client using GZip compression}<br>Mex-Subject : {Subject line to be used for SMTP messages}<br>Mex-Chunk-Range: Used if this is the first chunk of a large document. i.e. ‘1:n’ where n is the total number of chunks in the document.<br>Content-Encoding: gzip
 **Request Body**|The binary contents of the message which is being uploaded.
 **Response Code**|202: Accepted<br>403: Authentication Failed<br>417: Invalid Recipient
-**Response Body**|JSON which includes the Message ID of the newly created message record. {"messageID": allocatedMessageID}<br>In the Case of a Validation Failure the JSON will contain additional elements which will provide information about the cause of the error:<br>{"messageID": allocatedMessageID,<br>"errorEvent": statusEvent,<br>"errorCode" : statusCode,<br>"errorDescription" : statusDescription}<br>The errorEvent, errorCode & errorDescription entries will contain values as per the DTS Status Values in the DTS Client Interface Specification document.
+**Response Body**|JSON which includes the Message ID of the newly created message record. {"messageID": allocatedMessageID}<br>In the Case of a Validation Failure the JSON will contain additional elements which will provide information about the cause of the error:<br>{"messageID": allocatedMessageID,<br>"errorEvent": statusEvent,<br>"errorCode" : statusCode,<br>"errorDescription" : statusDescription}<br>The errorEvent, errorCode & errorDescription entries will contain values as per the Status Values in the Client Interface Specification document.
 **Results**|A new record is created in the messageExchangeRecord bucket which contains the meta-information about the message.<br>The contents of the message if any is broken into 2Mb chunks and held in the messageExchangeChunk bucket.<br>The Trading Summary Information for the Sending Mailbox is updated on the Spine so that the counts of the number of messages and the total message size transferred are updated. The ID of the newly created message is added to the inbox of the intended recipient mailbox.
 
 #### Example call
