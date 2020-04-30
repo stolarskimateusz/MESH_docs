@@ -377,7 +377,7 @@ paths:
             type: string
       responses:
         '200':
-          description: Ok
+          description: OK
           content:
             application/json:
               schema:
@@ -411,7 +411,7 @@ paths:
             type: string
       responses:
         '200':
-          description: Ok
+          description: OK
           content:
             application/json:
               schema:
@@ -423,6 +423,105 @@ paths:
                     example: 2
         '403':
           description: Authentication Failed
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /messageexchange/{sendersMailboxID}/outbox/tracking/{localId}:
+    get:
+      summary: Check inbox count
+      description: |
+        This command returns the number of messages currently held in the MESH mailbox that are ready to download.
+      parameters:
+        - in: path
+          name: mailboxId
+          required: true
+          description: The id of the recipient's mailbox ID
+          example: "MAILBOX01"
+          schema:
+            type: string
+        - in: header
+          name: Authorization
+          required: true
+          description: Authentication Headers
+          example: "Authorization: NHSMESH NONFUNC01:jt81ti68rlvta7379p3ng949rv:1:201511201038:291259e6a73cde3278f99cd5bd3c7ec9b3d1d5479077a8f711bddf58073d5555"
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        '403':
+          description: Authentication Failed
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /messageexchange/{recipientsMailboxID}/inbox/{messageID}:
+    get:
+      summary: Download message
+      description: |
+        This command returns the number of messages currently held in the MESH mailbox that are ready to download.
+      parameters:
+        - in: path
+          name: recipientsMailboxID
+          required: true
+          description: The id of the recipient's mailbox
+          example: "MAILBOX01"
+          schema:
+            type: string
+        - in: path
+          name: messageID
+          required: true
+          description: The id of the message
+          schema:
+            type: string
+        - in: header
+          name: Authorization
+          required: true
+          description: Authentication Headers
+          example: "Authorization: NHSMESH NONFUNC01:jt81ti68rlvta7379p3ng949rv:1:201511201038:291259e6a73cde3278f99cd5bd3c7ec9b3d1d5479077a8f711bddf58073d5555"
+          schema:
+            type: string
+        - in: header
+          name: Accept-Encoding
+          required: false
+          description: client can accept & decompress messages in GZip format
+          example: gzip
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            binary:
+              schema:
+                type: object
+        '206':
+          description: Partial Download. Indicates that this is the 1 st chunk of a multi-chunk message. The subsequent chunks can be downloaded via calls to the Download Chunk request.
+          content:
+            binary:
+              schema:
+                type: object    
+        '403':
+          description: Authentication Failed
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: Message does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+        '410':
+          description: Gone, message has already been downloaded
           content:
             application/json:
               schema:

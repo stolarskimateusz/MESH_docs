@@ -281,7 +281,6 @@ property|value
 **URL**|/messageexchange/{senders_mailbox_ID}/outbox/tracking/{localId}
 **HTTP Action**|GET
 **Request Headers**|Authorization: [Authentication Headers (see below)]
-|Content-Type: application/octet-stream
 
 ### Download message
 Retrieve a message based on its message_id.
@@ -291,7 +290,7 @@ property|value
 **URL**|/messageexchange/{recipient}/inbox/{messageID}
 **HTTP Action**|GET
 **Request Headers**|Authorization: [Authentication Headers (see below)]<br>Accept-Encoding: (optional) 'gzip' if client can accept & decompress messages in GZip format
-**Response Code**|200: Ok<br>206: Partial Download. Indicates that this is the 1 st chunk of a multi-chunk message. The subsequent chunks can be downloaded via calls to the Download Chunk request. (see section 4.6)<br>403: Authentication Failed<br>404: Message does not exist<br>410: Gone, message has already been downloaded
+**Response Code**|200: Ok<br>206: Partial Download. Indicates that this is the 1 st chunk of a multi-chunk message. The subsequent chunks can be downloaded via calls to the Download Chunk request.<br>403: Authentication Failed<br>404: Message does not exist<br>410: Gone, message has already been downloaded
 **Response Headers**|Content-Type: application/octet-stream<br>Content-Encoding: gzip if message was compressed on upload and can be accepted by the recipient.<br>Mex-From: {senders mailbox ID}<br>Mex-To: {recipient identifier}<br>Mex-WorkflowID: {DTS Workflow ID}<br>Mex-MessageID: {DTS Message ID}<br>Mex-FileName: {Original File Name}
 **Optional HTTP Response Headers**|Mex-ProcessID: {DTS Workflow ID}<br>Mex-Content-Compress: {Flag to indicate that contents should be compressed during transport}<br>Mex-Chunk-Range: 1:n - Only returned for a large, multi-chunk message to indicate that this is the 1st chunk of n.
 **Response Body**|The binary contents of the message which is being downloaded. This will be empty if the message is a Report 6 rather than Data.
