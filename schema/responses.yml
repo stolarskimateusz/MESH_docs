@@ -1,0 +1,76 @@
+openapi: '3.0.2'
+info:
+  title: MESH HTTP API
+  version: '0.0.1'
+
+paths:
+  /test:
+    get:
+      responses:
+        '200':
+          description: OK
+
+
+components:
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+    '403':
+      description: Authentication Failed
+      content:
+        application/json:
+          schema:
+            type: object
+    '404':
+      description: Message does not exist
+      content:
+        application/json:
+          schema:
+            type: object
+    '202':
+      description: Accepted
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              messageID:
+                type: string
+                example: "allocatedMessageID"
+                description: "JSON which includes the Message ID of the newly created message record."
+    '417':
+      description: Invalid Recipient
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              messageID:
+                type: string
+                description: "ID of the allocated message"
+              errorEvent:
+                type: string
+                description: "status event"
+              errorCode:
+                type: integer
+                description: "status code"
+                example: 417
+              errorDescription:
+                type: string
+                description: "Description of the status"
+    '410':
+      description: Gone, message has already been downloaded
+      content:
+        application/json:
+          schema:
+            type: object
+    '206':
+      description: Partial Download – Indicates that chunk has been downloaded successfully and that there are further chunks.
+      content:
+        binary:
+          schema:
+            type: object  

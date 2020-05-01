@@ -1,0 +1,78 @@
+openapi: '3.0.2'
+info:
+  title: MESH HTTP API
+  version: '0.0.1'
+
+paths:
+  /test:
+    get:
+      responses:
+        '200':
+          description: OK
+
+components:
+  parameters:
+    mailboxID:
+      name: mailboxID
+      in: path
+      required: true
+      description: The id of the mailbox
+      example: "MAILBOX01"
+      schema:
+        type: string
+    messageID:
+      in: path
+      name: messageID
+      required: true
+      description: The id of the message
+      schema:
+        type: string
+    chunkNo:
+      in: path
+      name: chunkNo
+      required: true
+      description: The index number of the chunk
+      example: 1
+      schema:
+        type: integer
+    AuthorizationHeader:
+      in: header
+      name: Authorization
+      required: true
+      description: Authentication Headers
+      example: "Authorization: NHSMESH NONFUNC01:jt81ti68rlvta7379p3ng949rv:1:201511201038:291259e6a73cde3278f99cd5bd3c7ec9b3d1d5479077a8f711bddf58073d5555"
+      schema:
+        type: string
+    AcceptEncodingHeader:
+      in: header
+      name: Accept-Encoding
+      required: false
+      description: client can accept & decompress messages in GZip format
+      example: gzip
+      schema:
+        type: string
+    ContentTypeHeader:
+      in: header
+      name: Content-Type
+      required: true
+      description: Type of sent content
+      example: "application/octet-stream"
+      schema:
+        type: string
+    ContentEncodingHeader:
+      in: header
+      name: Content-Encoding
+      required: false
+      description: The Content-Encoding entity header is used to compress the media-type. When present, its value indicates which encodings were applied to the entity-body. It lets the client know how to decode in order to obtain the media-type referenced by the Content-Type header.
+      example: gzip
+      schema:
+        type: string
+    MexChunkRange:
+      in: header
+      name: Mex-Chunk-Range
+      required: true
+      description: describes which chunk of the range is sent.
+      example: "2:4"
+      schema:
+        type: string
+        format: integer:integer
