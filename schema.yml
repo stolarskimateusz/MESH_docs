@@ -1,0 +1,655 @@
+openapi: '3.0.2'
+info:
+  title: MESH HTTP API
+  version: '0.0.1'
+  description: |
+    # Overview
+    The Message Exchange HTTP API provides a RESTful interface to MESH to allow messages to be transferred between sender & recipient mailboxes.
+    This HTTP API is used by all Mailboxes that send and/or receive messages through Message Exchange. This includes the following:
+    - MESH Client - Sends HTTP Requests directly to the MESH HTTP API
+    - DTS Client - Sends messages to the DTS Adapter which then delegates the action via the MESH HTTP API
+    - 3rd Party Clients - External suppliers can create their own client implementations which upload & download files via the MESH HTTP API. (Right now this is limited to connections over the N3 network, but the work to allow this access via the internet is in procces.)
+    - 'Internal' Applications - Messages can be sent from core Spine processes to external mailboxes by uploading messages via the MESH HTTP API
+
+servers:
+  - url: https://msg.int.spine2.ncrs.nhs.uk/
+    description: Integation Test Environment
+  - url: https://nww.dev.spine2.ncrs.nhs.uk/
+    description: Development Test Enivornment
+  - url: https://nww.dep.spine2.ncrs.nhs.uk/
+    description: Deployment Test Environment
+  - url: https://mesh-sync.national.ncrs.nhs.uk/
+    description: Live environment
+
+paths:
+  /messageexchange/{mailboxID}:
+    post:
+      summary: Authenticate a mailbox (handshake)
+      description: |
+        It performs an authentication check on the Mailbox. This should be performed before the mailbox attempts to send or receive files. This action should be the first action in each polling cycle.
+
+        The Check User Authentication message attempts to connect to a specific mailbox. This allows the user to ensure that their authentication is correct and will update the details of the connection history held for the mailbox. It can be considered similar to a keep-alive or a ping message in that it allows monitoring on the Spine to be aware of the ongoing utilisation of the inbox despite a lack of traffic.
+
+        This message should be the first message sent in a ‘polling’ period for a mailbox. This allows the client to check that the MESH Server can be contacted and the mailbox is active before attempting to send/receive messages.
+      parameters:
+        - in: path
+          name: mailboxID
+          required: true
+          description: The id of the mailbox
+          example: "MAILBOX01"
+          schema:
+            type: string
+        - in: header
+          name: Authorization
+          required: true
+          description: Authentication Headers
+          example: "Authorization: NHSMESH NONFUNC01:jt81ti68rlvta7379p3ng949rv:1:201511201038:291259e6a73cde3278f99cd5bd3c7ec9b3d1d5479077a8f711bddf58073d5555"
+          schema:
+            type: string
+        - in: header
+          name: Mex-ClientVersion
+          required: true
+          description: Client Version Number
+          example: "Alpha.0.0.1"
+          schema:
+            type: string
+        - in: header
+          name: Mex-OSArchitecture
+          required: true
+          description: Operating System Architecture
+          example: "Windows 10"
+          schema:
+            type: string
+        - in: header
+          name: Mex-OSName
+          required: true
+          description: Operating System Name
+          example: "x86_64"
+          schema:
+            type: string
+        - in: header
+          name: Mex-OSVersion
+          required: true
+          description: Operating System Version
+          example: "6.1"
+          schema:
+            type: string
+        - in: header
+          name: Mex-JavaVersion
+          required: true
+          description: JVM Version Number
+          example: "1.7.0_60"
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        '403':
+          description: Authentication Failed
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /messageexchange/{mailboxID}/outbox:
+    post:
+      summary: Send a message
+      description: |
+        This command uploads a message to the Message Exchange Server for onward delivery. The message is POSTed to the Sender's Virtual Outbox on the Spine. Meta-information is supplied in the request headers and the content of the message is supplied in the request body. Messages will be kept for five days before being deleted at which point a ‘message undelivered message’ is sent to the sender for information.
+      parameters:
+        - in: path
+          name: mailboxID
+          required: true
+          description: The id of the mailbox
+          example: "MAILBOX01"
+          schema:
+            type: string
+        - in: header
+          name: Authorization
+          required: true
+          description: Authentication Headers
+          example: "Authorization: NHSMESH NONFUNC01:jt81ti68rlvta7379p3ng949rv:1:201511201038:291259e6a73cde3278f99cd5bd3c7ec9b3d1d5479077a8f711bddf58073d5555"
+          schema:
+            type: string
+        - in: header
+          name: Content-Type
+          required: true
+          description: Type of sent content
+          example: "application/octet-stream"
+          schema:
+            type: string
+        - in: header
+          name: Mex-From
+          required: true
+          description: sender's mailbox ID
+          example: "MAILBOX01"
+          schema:
+            type: string
+        - in: header
+          name: Mex-To
+          required: true
+          description: receiver's mailbox ID
+          example: "MAILBOX02"
+          schema:
+            type: string
+        - in: header
+          name: Mex-WorkflowID
+          required: true
+          description: Workflow ID
+          example: "2015_11_12_1543"
+          schema:
+            type: string
+        - in: header
+          name: Mex-FileName
+          required: true
+          description: Original File Name
+          example: "file.zip"
+          schema:
+            type: string
+        - in: header
+          name: Mex-LocalID
+          required: true
+          description: Local unique identifier of the message
+          example: "TESTING01"
+          schema:
+            type: string
+        - in: header
+          name: Mex-ProcessID
+          required: false
+          description: Process ID
+          schema:
+            type: string
+        - in: header
+          name: Mex-Content-Compress
+          required: false
+          description: Flag to indicate that the contents have been automaticallycompressed by the client using GZip compression
+          example: true
+          schema:
+            type: string
+        - in: header
+          name: Mex-Subject
+          required: false
+          description: Subject line to be used for SMTP messages
+          example: "TEST TRANSFER 01"
+          schema:
+            type: string
+        - in: header
+          name: Mex-Chunk-Range
+          required: false
+          description: Used if this is the first chunk of a large document. i.e. ‘1:n’ where n is the total number of chunks in the document.
+          example: "1:4"
+          schema:
+            type: string
+        - in: header
+          name: Content-Encoding
+          required: false
+          description: The Content-Encoding entity header is used to compress the media-type. When present, its value indicates which encodings were applied to the entity-body. It lets the client know how to decode in order to obtain the media-type referenced by the Content-Type header.
+          example: gzip
+          schema:
+            type: string
+      requestBody:
+        description: The binary contents of the message which is being uploaded.
+        content:
+          binary:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messageID:
+                    type: string
+                    example: "allocatedMessageID"
+                    description: "JSON which includes the Message ID of the newly created message record."
+        '403':
+          description: Authentication Failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messageID:
+                    type: string
+                    description: "ID of the allocated message"
+                  errorEvent:
+                    type: string
+                    description: "status event"
+                  errorCode:
+                    type: integer
+                    description: "status code"
+                    example: 403
+                  errorDescription:
+                    type: string
+                    description: "Description of the status"
+        '417':
+          description: Invalid Recipient
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messageID:
+                    type: string
+                    description: "ID of the allocated message"
+                  errorEvent:
+                    type: string
+                    description: "status event"
+                  errorCode:
+                    type: integer
+                    description: "status code"
+                    example: 417
+                  errorDescription:
+                    type: string
+                    description: "Description of the status"
+
+  /messageexchange/{mailboxID}/outbox/{messageID}/{chunkNo}:
+    post:
+      summary: Upload a chunk of the message
+      description: |
+        This command uploads additional chunks for large messages after the first chunk has been uploaded via the Send Message request. No Meta-Data for the message needs to be supplied as it has been supplied when the first chunk was uploaded.
+      parameters:
+        - in: path
+          name: mailboxID
+          required: true
+          description: The id of the mailbox
+          example: "MAILBOX01"
+          schema:
+            type: string
+        - in: path
+          name: messageID
+          required: true
+          description: The id of the message given in the response body of the sent of the first chunk request.
+          schema:
+            type: string
+        - in: path
+          name: chunkNo
+          required: true
+          description: The index number of the chunk
+          example: 1
+          schema:
+            type: integer
+        - in: header
+          name: Authorization
+          required: true
+          description: Authentication Headers
+          example: "Authorization: NHSMESH NONFUNC01:jt81ti68rlvta7379p3ng949rv:1:201511201038:291259e6a73cde3278f99cd5bd3c7ec9b3d1d5479077a8f711bddf58073d5555"
+          schema:
+            type: string
+        - in: header
+          name: Content-Type
+          required: true
+          description: Type of sent content
+          example: "application/octet-stream"
+          schema:
+            type: string
+        - in: header
+          name: Mex-Chunk-Range
+          required: true
+          description: describes which chunk of the range is sent.
+          example: "2:4"
+          schema:
+            type: string
+            format: integer:integer
+        - in: header
+          name: Content-Encoding
+          required: false
+          description: The Content-Encoding entity header is used to compress the media-type. When present, its value indicates which encodings were applied to the entity-body. It lets the client know how to decode in order to obtain the media-type referenced by the Content-Type header.
+          example: gzip
+          schema:
+            type: string
+      requestBody:
+        description: The binary contents of the message which is being uploaded.
+        content:
+          binary:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messageID:
+                    type: string
+                    example: "allocatedMessageID"
+                    description: Message ID of the created message 
+                  blockId:
+                    type: integer
+                    example: 2
+                    description: Number of the chunk.
+        '403':
+          description: Authentication Failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messageID:
+                    type: string
+                    description: "Message ID of the allocated message"
+                  errorEvent:
+                    type: string
+                    description: "status event"
+                  errorCode:
+                    type: integer
+                    description: "status code"
+                    example: 403
+                  errorDescription:
+                    type: string
+                    description: "Description of the status"
+        '417':
+          description: Invalid Recipient
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messageID:
+                    type: string
+                    description: "Message ID of the allocated message"
+                  errorEvent:
+                    type: string
+                    description: "status event"
+                  errorCode:
+                    type: integer
+                    description: "status code"
+                    example: 417
+                  errorDescription:
+                    type: string
+                    description: "Description of the status"
+
+  /messageexchange/{mailboxID}/inbox:
+    get:
+      summary: Check an inbox
+      description: |
+        Checks if there are any messages that have been sent to a specific recipient mailbox and are ready to be downloaded. Client systems **must** poll their assigned inbox minimum once a day and maximum once every five minutes for messages. Any messages that are identified **should** be downloaded immediately. However, clients may choose to throttle messages or may be required to distribute processing time across a number of registered MESH mailboxes.
+      parameters:
+        - in: path
+          name: mailboxID
+          required: true
+          description: The id of the recipient's mailbox ID
+          example: "MAILBOX01"
+          schema:
+            type: string
+        - in: header
+          name: Authorization
+          required: true
+          description: Authentication Headers
+          example: "Authorization: NHSMESH NONFUNC01:jt81ti68rlvta7379p3ng949rv:1:201511201038:291259e6a73cde3278f99cd5bd3c7ec9b3d1d5479077a8f711bddf58073d5555"
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        '403':
+          description: Authentication Failed
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /messageexchange/{mailboxID}/count:
+    get:
+      summary: Check an inbox's count
+      description: |
+        This command returns the number of messages currently held in the MESH mailbox that are ready to download.
+      parameters:
+        - in: path
+          name: mailboxID
+          required: true
+          description: The id of the recipient's mailbox ID
+          example: "MAILBOX01"
+          schema:
+            type: string
+        - in: header
+          name: Authorization
+          required: true
+          description: Authentication Headers
+          example: "Authorization: NHSMESH NONFUNC01:jt81ti68rlvta7379p3ng949rv:1:201511201038:291259e6a73cde3278f99cd5bd3c7ec9b3d1d5479077a8f711bddf58073d5555"
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messageCount:
+                    type: integer
+                    description: "Amount of messages in the inbox"
+                    example: 2
+        '403':
+          description: Authentication Failed
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /messageexchange/{mailboxID}/outbox/tracking/{localId}:
+    get:
+      summary: Check message's status
+      description: |
+        This command checks the status of a message from a specific recipient mailbox. This message replaces the DTS Message Tracking API call. The LocalID value is an optional parameter in MESH message.
+      parameters:
+        - in: path
+          name: mailboxID
+          required: true
+          description: The id of the recipient's mailbox ID
+          example: "MAILBOX01"
+          schema:
+            type: string
+        - in: path
+          name: localId
+          required: true
+          description: Local unique identifier of the message
+          schema:
+            type: string
+        - in: header
+          name: Authorization
+          required: true
+          description: Authentication Headers
+          example: "Authorization: NHSMESH NONFUNC01:jt81ti68rlvta7379p3ng949rv:1:201511201038:291259e6a73cde3278f99cd5bd3c7ec9b3d1d5479077a8f711bddf58073d5555"
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        '403':
+          description: Authentication Failed
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /messageexchange/{mailboxID}/inbox/{messageID}:
+    get:
+      summary: Download a message
+      description: |
+        This command returns the number of messages currently held in the MESH mailbox that are ready to download.
+      parameters:
+        - in: path
+          name: mailboxID
+          required: true
+          description: The id of the recipient's mailbox
+          example: "MAILBOX01"
+          schema:
+            type: string
+        - in: path
+          name: messageID
+          required: true
+          description: The id of the message
+          schema:
+            type: string
+        - in: header
+          name: Authorization
+          required: true
+          description: Authentication Headers
+          example: "Authorization: NHSMESH NONFUNC01:jt81ti68rlvta7379p3ng949rv:1:201511201038:291259e6a73cde3278f99cd5bd3c7ec9b3d1d5479077a8f711bddf58073d5555"
+          schema:
+            type: string
+        - in: header
+          name: Accept-Encoding
+          required: false
+          description: client can accept & decompress messages in GZip format
+          example: gzip
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            binary:
+              schema:
+                type: object
+        '206':
+          description: Partial Download. Indicates that this is the 1 st chunk of a multi-chunk message. The subsequent chunks can be downloaded via calls to the Download Chunk request.
+          content:
+            binary:
+              schema:
+                type: object    
+        '403':
+          description: Authentication Failed
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: Message does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+        '410':
+          description: Gone, message has already been downloaded
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /messageexchange/{mailboxID}/inbox/{messageID}/{chunkNo}:
+    get:
+      summary: Download a chunk of the message
+      description: |
+        Retrieve a chunk of the message based on its message_id and chunk number.
+        The lowest number is 2, as the first part has been retrieved since the download of the message.
+      parameters:
+        - in: path
+          name: mailboxID
+          required: true
+          description: The id of the recipient's mailbox
+          example: "MAILBOX01"
+          schema:
+            type: string
+        - in: path
+          name: messageID
+          required: true
+          description: The id of the message
+          schema:
+            type: string
+        - in: path
+          name: chunkNo
+          required: true
+          description: The index of the chunk
+          schema:
+            type: string
+        - in: header
+          name: Authorization
+          required: true
+          description: Authentication Headers
+          example: "Authorization: NHSMESH NONFUNC01:jt81ti68rlvta7379p3ng949rv:1:201511201038:291259e6a73cde3278f99cd5bd3c7ec9b3d1d5479077a8f711bddf58073d5555"
+          schema:
+            type: string
+        - in: header
+          name: Accept-Encoding
+          required: false
+          description: client can accept & decompress messages in GZip format
+          example: gzip
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            binary:
+              schema:
+                type: object
+        '206':
+          description: Partial Download – Indicates that chunk has been downloaded successfully and that there are further chunks.
+          content:
+            binary:
+              schema:
+                type: object    
+        '403':
+          description: Authentication Failed
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: Not Found – Indicates that the message chunk does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /messageexchange/{mailboxID}/inbox/{messageID}/status/:
+    put:
+      summary: Acknowledge a message's download
+      description: |
+        Acknowledge the successful download of a message. This will remove the message from the Recipient's Inbox.
+      parameters:
+        - in: path
+          name: mailboxID
+          required: true
+          description: The id of the recipient's mailbox
+          example: "MAILBOX01"
+          schema:
+            type: string
+        - in: path
+          name: messageID
+          required: true
+          description: The id of the message
+          schema:
+            type: string
+        - in: header
+          name: Authorization
+          required: true
+          description: Authentication Headers
+          example: "Authorization: NHSMESH NONFUNC01:jt81ti68rlvta7379p3ng949rv:1:201511201038:291259e6a73cde3278f99cd5bd3c7ec9b3d1d5479077a8f711bddf58073d5555"
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        '403':
+          description: Authentication Failed
+          content:
+            application/json:
+              schema:
+                type: object
