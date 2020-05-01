@@ -12,7 +12,14 @@ info:
     - 'Internal' Applications - Messages can be sent from core Spine processes to external mailboxes by uploading messages via the MESH HTTP API
 
 servers:
-  - url: https://api.server.test/v1
+  - url: https://msg.int.spine2.ncrs.nhs.uk/
+    description: Integation Test Environment
+  - url: https://nww.dev.spine2.ncrs.nhs.uk/
+    description: Development Test Enivornment
+  - url: https://nww.dep.spine2.ncrs.nhs.uk/
+    description: Deployment Test Environment
+  - url: https://mesh-sync.national.ncrs.nhs.uk/
+    description: Live environment
 
 paths:
   /messageexchange/{mailboxID}:
